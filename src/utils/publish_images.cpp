@@ -12,8 +12,6 @@
 #include <ug_stereomatcher/settings.h>
 #include <ug_stereomatcher/CamerasSync.h>
 #include <sensor_msgs/CameraInfo.h>
-#include <ug_stereomatcher/SetCameraInfo.h>
-#include <ug_stereomatcher/GetCameraInfo.h>
 
 bool showImage = false;
 
