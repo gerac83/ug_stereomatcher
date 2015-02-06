@@ -1,0 +1,20 @@
+<!--
+	Launch file for testing purposes
+	
+	After launching this file, it is necessary to publish the
+	acquisition command. This can be done as below:
+		rostopic pub -1 /acquire std_msgs/String <double dash> full
+		
+	SoCS, UoG. Gerardo Aragon-Camarasa. January 2013 
+-->
+
+<launch>
+
+	<node pkg="rh_stereo_proc" type="RHpoint_cloud" name="RHpoint_cloud" output="screen">
+	</node>
+
+	<node pkg="rh_stereo_proc" type="matcher.py" name="RHstereo_matcher" output="screen">
+	</node>
+
+</launch>
+

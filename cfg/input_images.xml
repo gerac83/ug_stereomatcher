@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<opencv_storage>
+<!-- List images by pairs and with absolute paths, e.g.
+	 /././left1.tif
+	 /././right1.tif
+	 /././left2.tif
+	 /././right2.tif
+	 ...
+	 /././leftn.tif
+	 /././rightn.tif
+ -->
+<images>
+/././left.tif
+/././right.tif
+</images>
+</opencv_storage>
+
+
+
+
+
