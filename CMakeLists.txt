@@ -63,8 +63,8 @@ add_dependencies(UGpoint_cloud ug_stereomatcher_generate_messages_cpp)
 target_link_libraries(UGpoint_cloud boost_signals)
 target_link_libraries(UGpoint_cloud ${catkin_LIBRARIES})      
 
-add_executable(publish_images src/utils/publish_images.cpp)
-target_link_libraries(publish_images ${catkin_LIBRARIES})
+add_executable(UGpublish_images src/utils/publish_images.cpp)
+target_link_libraries(UGpublish_images ${catkin_LIBRARIES})
 
 # ######################### GPUmatcher
 find_package(CUDA REQUIRED) 

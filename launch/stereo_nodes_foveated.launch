@@ -1,23 +1,32 @@
 <!--
-	Launch file for testing purposes
+	Launch file for testing foveated stereo matcher and foveated point cloud
 	
 	After launching this file, it is necessary to publish the
 	acquisition command. This can be done as below:
-		rostopic pub -1 /acquire std_msgs/String <double dash> full
+		rostopic pub -1 acquire_images ug_stereomatcher/CamerasSync '{timeStamp: now, data: full}'
 		
-	SoCS, UoG. Gerardo Aragon-Camarasa. January 2013 
+	SoCS, UoG. Gerardo Aragon-Camarasa. January 2015 
 -->
 
 <launch>
 
+	<!-- Parameters -->
 	<param name="/RH/status/foveated" value="1" />
-<!--	<param name="/RH/status/destLevel" value="0" />-->
 	<param name="/RH/status/fovLevel" value="0" />
 
-	<node pkg="rh_stereo_proc" type="RHpoint_cloud" name="RHpoint_cloud" output="screen">
+	<!-- Image list file -->
+    <param name="/RH/cameras/image_list" value="$(find ug_stereomatcher)/src/utils/input_images.xml" />
+
+    <!-- Publish images -->
+    <node pkg="ug_stereomatcher" type="UGpublish_images" name="UGpublish_images" output="screen">
 	</node>
 
-	<node pkg="rh_stereo_proc" type="matcher.py" name="RHstereo_matcher" output="screen">
+    <!-- Point cloud node -->
+	<node pkg="ug_stereomatcher" type="UGpoint_cloud" name="UGpoint_cloud" output="screen">
+	</node>
+
+	<!-- GPU stereo matcher -->
+	<node pkg="ug_stereomatcher" type="matcher.py" name="RHstereo_matcher" output="screen">
 	</node>
 
 </launch>

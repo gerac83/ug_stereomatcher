@@ -13,7 +13,7 @@
 #include <ug_stereomatcher/CamerasSync.h>
 #include <sensor_msgs/CameraInfo.h>
 
-bool showImage = false;
+bool showImage = true;
 
 static const char WINDOW_LEFT[] = "Left image";
 static const char WINDOW_RIGHT[] = "Right image";
