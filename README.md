@@ -1,6 +1,6 @@
 # ug_stereomatcher
 
-**Authors (see package.xml for contact info):** Paul Cockshott, Gerardo Aragon-Camarasa, Tian Xu, Mozhgan Chimeh and J. Paul Siebert
+**Authors (see package.xml for contact info):** Paul Cockshott, Tian Xu, Gerardo Aragon-Camarasa, Susanne Oehler, Mozhgan Chimeh and J. Paul Siebert
 
 **SEE LICENSE BEFORE USING THIS SOFTWARE**
 
