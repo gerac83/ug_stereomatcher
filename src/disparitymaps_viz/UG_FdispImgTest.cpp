@@ -19,7 +19,7 @@ Fov image test
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
-#include "MatchGPULib.h"
+#include "../gpu_matcher/MatchGPULib.h"
 
 //namespace enc = sensor_msgs::image_encodings;
 
