@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="University of Glasgow GPU stereo matcher : University of Glasgow GPU stereo matcher">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>University of Glasgow GPU stereo matcher</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/gerac83/ug_stereomatcher">View on GitHub</a>
+
+          <h1 id="project_title">University of Glasgow GPU stereo matcher</h1>
+          <h2 id="project_tagline">University of Glasgow GPU stereo matcher</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/gerac83/ug_stereomatcher/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/gerac83/ug_stereomatcher/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a id="university-of-glasgow-gpu-stereo-matcher" class="anchor" href="#university-of-glasgow-gpu-stereo-matcher" aria-hidden="true"><span class="octicon octicon-link"></span></a>University of Glasgow GPU Stereo Matcher</h1>
+
+<p><strong>Authors (see package.xml for contact info):</strong> Paul Cockshott, Tian Xu, Gerardo Aragon-Camarasa, Susanne Oehler, Mozhgan Chimeh and J. Paul Siebert</p>
+
+<p>Computer Vision and Graphics Lab., School of Computing Science, University of Glasgow</p>
+
+<p><strong>SEE LICENSE BEFORE USING THIS SOFTWARE</strong></p>
+
+<p>The ug_stereomatcher ROS package comprises the University of Glasgow GPU stereo matcher and nodes to compute point clouds from disparity maps for each operational mode as described below.</p>
+
+<p>The matcher has two operational modes:</p>
+
+<ol>
+<li>Compute disparity maps over a image pyramid at full resolution in 10 seconds on 16MP RGB images</li>
+<li>Compute foveated disparity maps for each level on the pyramid in 3 seconds on 16MP RGB images with a fixed fovea size of 615 by 407</li>
+</ol>
+
+<h2>
+<a id="publications" class="anchor" href="#publications" aria-hidden="true"><span class="octicon octicon-link"></span></a>Publications</h2>
+
+<p>If you use this ROS package please cite the following paper(s):</p>
+
+<ul>
+<li>Cockshott, P., Oehler, S., Xu, T., Siebert, J. P., and Aragon-Camarasa, G., 2012 “Parallel stereo vision algorithm” in: Many-Core Applications Research Community Symposium 2012, 29-30 Nov 2012, Aachen, Germany.</li>
+</ul>
+
+<p>This ROS package has been used and demonstrated in the following papers:</p>
+
+<ul>
+<li>Sun, L., Aragon-Camarasa, G. and Siebert, J. P., 2014. “Improving Cloth Manipulation by Modelling Wrinkles” in: 2014 IEEE International Conference on Robotics and Automation (ICRA 2014), Advances in robot manipulation of clothes and flexible objects Workshop. June 1, 2014. Hong Kong, China.</li>
+<li>Sun, L., Aragon-Camarasa, G., Siebert, J.P. and Rogers, S., 2013 “A Heuristic-Based Approach for Flattening Wrinkled Clothes,” in ‘Towards Autonomous Robotic Systems, TAROS 2013’, University of Oxford, 20-30 August 2013.</li>
+<li>Sun, L., Aragon-Camarasa, G. Rogers, S., Siebert, J.P., 2015 "Accurate Garment Surface Analysis using an Active Stereo Robot Head with Application to Dual-Arm Flattening," in ICRA 2015 (Accepted)</li>
+</ul>
+
+<h2>
+<a id="database-of-stereo-images" class="anchor" href="#database-of-stereo-images" aria-hidden="true"><span class="octicon octicon-link"></span></a>Database of stereo images</h2>
+
+<p>For benchmarking, we have produced a databse of 80 stereo RGB images; it can be downloaded for free at:</p>
+
+<p><a href="https://sites.google.com/site/ugstereodatabase/">https://sites.google.com/site/ugstereodatabase/</a></p>
+
+<p>Companion technical report:</p>
+
+<p><a href="http://arxiv.org/abs/1311.7295">http://arxiv.org/abs/1311.7295</a></p>
+
+<h2>
+<a id="acknowledgements" class="anchor" href="#acknowledgements" aria-hidden="true"><span class="octicon octicon-link"></span></a>Acknowledgements</h2>
+
+<p>This work has been supported by the European Community’s Seventh Framework Programme (FP7/2007- 2013) under grant agreement no 288553, CloPeMa (<a href="http://www.clopema.eu">www.clopema.eu</a>).</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">University of Glasgow GPU stereo matcher maintained by <a href="https://github.com/gerac83">gerac83</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+              <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-59464175-1");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+
+  </body>
+</html>
