@@ -9,6 +9,14 @@
 #include <cv_bridge/cv_bridge.h>
 #include <ros/package.h>
 #include <sensor_msgs/image_encodings.h>
+// Opencv
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
+using namespace cv;
+using namespace std;
+
 #include <ug_stereomatcher/settings.h>
 #include <ug_stereomatcher/CamerasSync.h>
 #include <sensor_msgs/CameraInfo.h>
