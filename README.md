@@ -10,3 +10,4 @@ The matches has two operational modes:
 * Add articles
 * Add database as a reference benchmark
 * Add dependencies
+* Add test images
