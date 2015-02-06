@@ -1,6 +1,8 @@
 # ug_stereomatcher
 
-## Authors (see package.xml for contact info): Paul Cockshott, Gerardo Aragon-Camarasa, Tian Xu, Mozhgan Chimeh and J. Paul Siebert
+**Authors (see package.xml for contact info):** Paul Cockshott, Gerardo Aragon-Camarasa, Tian Xu, Mozhgan Chimeh and J. Paul Siebert
+
+**SEE LICENSE BEFORE USING THIS SOFTWARE**
 
 The ug_stereomatcher ROS package comprises the University of Glasgow GPU stereo matcher and nodes to compute point clouds from disparity maps for each operational mode as described below.
 
@@ -9,7 +11,7 @@ The matcher has two operational modes:
 1. Compute disparity maps over a image pyramid at full resolution in 10 seconds on 16MP RGB images
 2. Compute foveated disparity maps for each level on the pyramid in 3 seconds on 16MP RGB images with a fixed fovea size of 615 by 407
 
-## Notes
+## Publications
 
 If you use this ROS package please cite the following paper(s):
 
@@ -23,10 +25,10 @@ This ROS package has been used and demonstrated in the following papers:
 
 ## Database of stereo images
 
-For benchmarking this matcher we have used the following stereo database:
+For benchmarking, we have produced a databse of 80 stereo RGB images; it can be downloaded for free at:
 
 https://sites.google.com/site/ugstereodatabase/
 
-Technical report:
+Companion technical report:
 
 http://arxiv.org/abs/1311.7295
