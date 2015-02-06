@@ -47,7 +47,7 @@ find_package(OpenCV)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 ### testing non fovea (working)
-add_executable(UGdisp_image src/disparitymaps_viz/ug_dispImgTest.cpp)
+add_executable(UGdisp_image src/disparitymaps_viz/UG_dispImgTest.cpp)
 add_dependencies(UGdisp_image ug_stereomatcher_generate_messages_cpp)
 target_link_libraries(UGdisp_image boost_signals)
 target_link_libraries(UGdisp_image ${catkin_LIBRARIES})
@@ -115,9 +115,9 @@ FOREACH(lib ${LIB_NAMES})
   target_link_libraries(MatchLib ${LIBS})
 ENDFOREACH(lib)
 
-add_executable(UGGPU_matcher src/gpu_matcher/UGGPU_matcher.cpp)
-#target_link_libraries(UGGPU_matcher shrutil_x86_64 cutil_x86_64)
-add_dependencies(UGGPU_matcher ug_stereomatcher_generate_messages_cpp)
-target_link_libraries(UGGPU_matcher MatchGPULib ${catkin_LIBRARIES})
+add_executable(UG_matcher_gpu src/gpu_matcher/UG_GPU_matcher.cpp)
+#target_link_libraries(UG_matcher_gpu shrutil_x86_64 cutil_x86_64)
+add_dependencies(UG_matcher_gpu ug_stereomatcher_generate_messages_cpp)
+target_link_libraries(UG_matcher_gpu MatchGPULib ${catkin_LIBRARIES})
 
 
