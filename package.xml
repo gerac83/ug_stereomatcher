@@ -6,12 +6,12 @@
   
   <author email="t.xu.1@research.gla.ac.uk">Tian Xu</author>  
   <author email="William.Cockshott@glasgow.ac.uk">Paul Cockshott</author> 
-  <author email="ger.ac83@gmail.com">Gerardo Aragon</author>  
+  <author email="ger.ac83@gmail.com">Gerardo Aragon-Camarasa</author>  
   <author email="mozhgan.kabiri@gmail.com">Mozhgan Chimeh</author>
   <author email="Paul.Siebert@glasgow.ac.uk">J. Paul Siebert</author>
   <author>Susanne Oehler</author>
 
-  <maintainer email="ger.ac83@gmail.com">Gerardo Aragon</maintainer>  
+  <maintainer email="ger.ac83@gmail.com">Gerardo Aragon-Camarasa</maintainer>  
   <license>BSD</license>
   
   <buildtool_depend>catkin</buildtool_depend>
