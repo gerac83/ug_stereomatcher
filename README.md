@@ -11,7 +11,7 @@ The matcher has two operational modes:
 1. Compute disparity maps over a image pyramid at full resolution in 10 seconds on 16MP RGB images
 2. Compute foveated disparity maps for each level on the pyramid in 3 seconds on 16MP RGB images with a fixed fovea size of 615 by 407
 
-** NOTE: ** _You need a CUDA capable graphics card in order to compile and run the software. For 16MP images, you need at least 2GB of graphics card RAM. This code has been optimised for the NVIDIA Geforce GTX 750i and 970._
+**NOTE:** _You need a CUDA capable graphics card in order to compile and run the software. For 16MP images, you need at least 2GB of graphics card RAM. This code has been optimised for the NVIDIA Geforce GTX 750i and 970._
 
 ## Publications
 
