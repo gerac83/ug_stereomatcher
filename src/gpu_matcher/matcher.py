@@ -10,7 +10,7 @@ node will not longer be used.
 Authors: Gerardo Aragon-Camarasa. 2014
 """
 
-import roslib; roslib.load_manifest('rh_stereo_proc')
+import roslib; roslib.load_manifest('ug_stereomatcher')
 import rospy
 import message_filters
 from stereo_msgs.msg import DisparityImage
@@ -21,7 +21,7 @@ import time
 from rospy import Time
 import numpy as np
 import whereIam
-from rh_stereo_proc.msg import foveatedstack
+from ug_stereomatcher.msg import foveatedstack
 
 def messagesCBF(msL,msR):
     global proc
@@ -34,7 +34,7 @@ def messagesCBF(msL,msR):
     rospy.loginfo("GPU matcher closed...")
     # Start again macther after 5 seconds of being closed
     #time.sleep(5)
-    proc = subprocess.Popen(['rosrun', 'rh_stereo_proc', 'RHGPU_matcher'])
+    proc = subprocess.Popen(['rosrun', 'ug_stereomatcher', 'UG_matcher_gpu'])
     rospy.loginfo("GPU matcher openned...")
 
 def messagesCB(msL,msR):
@@ -48,7 +48,7 @@ def messagesCB(msL,msR):
     rospy.loginfo("GPU matcher closed...")
     # Start again macther after 5 seconds of being closed
     #time.sleep(5)
-    proc = subprocess.Popen(['rosrun', 'rh_stereo_proc', 'RHGPU_matcher'])
+    proc = subprocess.Popen(['rosrun', 'ug_stereomatcher', 'UG_matcher_gpu'])
     rospy.loginfo("GPU matcher openned...")
 
 # ********* MAIN *********
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     tsf = message_filters.TimeSynchronizer([subDHf, subDVf], 1)
     tsf.registerCallback(messagesCBF)
 
-    proc = subprocess.Popen(['rosrun', 'rh_stereo_proc', 'RHGPU_matcher'])
+    proc = subprocess.Popen(['rosrun', 'ug_stereomatcher', 'UG_matcher_gpu'])
     
     rospy.loginfo("matcher.py node ready!")
     rospy.spin()
