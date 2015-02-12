@@ -11,14 +11,14 @@
 <launch>
 
 	<!-- Parameters -->
-	<param name="/RH/status/foveated" value="1" />
-	<param name="/RH/status/fovLevel" value="0" />
+	<param name="foveated" value="1" />
+	<param name="fovLevel" value="0" />
 	<!-- Path where camera information is saved -->
 	<param name="camera_info_url_left" value="$(find ug_stereomatcher)/calibrations/calL.xml" />
 	<param name="camera_info_url_right" value="$(find ug_stereomatcher)/calibrations/calR.xml" />
 
 	<!-- Image list file -->
-	<param name="/RH/cameras/image_list" value="$(find ug_stereomatcher)/src/utils/input_images.xml" />
+	<param name="image_list" value="$(find ug_stereomatcher)/src/utils/input_images.xml" />
 
 	<!-- Publish images -->
 	<node pkg="ug_stereomatcher" type="UGpublish_images" name="UGpublish_images" output="screen">
