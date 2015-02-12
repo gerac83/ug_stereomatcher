@@ -4,6 +4,8 @@
 
 **SEE LICENSE BEFORE USING THIS SOFTWARE**
 
+**A tutorial can be found at https://github.com/gerac83/ug_stereomatcher/wiki**
+
 The ug_stereomatcher ROS package comprises the University of Glasgow GPU stereo matcher and nodes to compute point clouds from disparity maps for each operational mode as described below.
 
 The matcher has two operational modes:
