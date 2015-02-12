@@ -57,13 +57,13 @@ if __name__ == '__main__':
 
     rospy.init_node('RHmatcher_hack', anonymous=True)
     ### subscribers
-    subDV = message_filters.Subscriber('/RH/left_camera/disparityV', DisparityImage)
-    subDH = message_filters.Subscriber('/RH/left_camera/disparityH', DisparityImage)
+    subDV = message_filters.Subscriber('output_disparityV', DisparityImage)
+    subDH = message_filters.Subscriber('output_disparityH', DisparityImage)
     ts = message_filters.TimeSynchronizer([subDH, subDV], 1)
     ts.registerCallback(messagesCB)
     
-    subDVf = message_filters.Subscriber('/RH/left_camera/stackV', foveatedstack)
-    subDHf = message_filters.Subscriber('/RH/left_camera/stackH', foveatedstack)
+    subDVf = message_filters.Subscriber('output_stackV', foveatedstack)
+    subDHf = message_filters.Subscriber('output_stackH', foveatedstack)
     tsf = message_filters.TimeSynchronizer([subDHf, subDVf], 1)
     tsf.registerCallback(messagesCBF)
 
