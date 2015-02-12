@@ -29,7 +29,7 @@
 	</node>
 
 	<!-- GPU stereo matcher -->
-	<node pkg="ug_stereomatcher" type="matcher.py" name="RHstereo_matcher" output="screen">
+	<node pkg="ug_stereomatcher" type="matcher.py" name="matcher_py" output="screen">
 	</node>
 
 </launch>
