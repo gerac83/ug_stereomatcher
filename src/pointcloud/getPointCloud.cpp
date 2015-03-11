@@ -254,6 +254,9 @@ void CdynamicCalibration::getImages(const sensor_msgs::ImageConstPtr& imL, const
     {
         ROS_WARN("Camera information could not be read");
     }
+    
+    printMatrix(P1_, true);
+    printMatrix(P2_, true);
 
     ROS_INFO("Done!!");
 
@@ -299,7 +302,7 @@ void CdynamicCalibration::getDisparities(const stereo_msgs::DisparityImageConstP
 
     ROS_INFO_STREAM("Dimension of nfoveated disparity images: " << dispX.rows << ", " << dispX.cols);
 
-    if(pub_cloud_.getNumSubscribers() == 0)
+    if(pub_cloud_.getNumSubscribers() == 0 && save_cloud == false)
     {
         ROS_WARN("No one is asking for a point cloud :)");
     }
@@ -332,7 +335,7 @@ void CdynamicCalibration::getDisparities(const stereo_msgs::DisparityImageConstP
 
     }
 
-    if(pub_cloud_resized_.getNumSubscribers() == 0)
+    if(pub_cloud_resized_.getNumSubscribers() == 0 && save_cloud == false)
     {
         ROS_WARN("No one is asking for a resized point cloud :)");
     }
@@ -436,7 +439,7 @@ int CdynamicCalibration::upper_marginOf_in(int srcLevel, int destLevel){
 
     height[0] = get_hInit();
 
-    for(int i=0; i< MAX_LEVEL; i++)
+    for(int i=0; i< MAX_LEVEL -1 ; i++)
         height[i+1]=height[i]/SCALE;
 
     rows=height[destLevel];
@@ -466,7 +469,7 @@ int CdynamicCalibration::left_marginOf_in(int srcLevel, int destLevel){
 
     width[0] = get_wInit();
 
-    for(int i=0; i< MAX_LEVEL; i++)
+    for(int i=0; i< MAX_LEVEL - 1; i++)
         width[i+1]=width[i]/SCALE;
 
     cols=width[destLevel];
@@ -534,7 +537,7 @@ void CdynamicCalibration::getFDisparities(const ug_stereomatcher::foveatedstackC
     ROS_INFO_STREAM("Dimension of disparity foveated stack : " << fdispX.rows << ", " << fdispX.cols); // prints out 2849, 615 for 16Mega pixel image
 
 
-    if(pub_cloud_.getNumSubscribers() == 0)
+    if(pub_cloud_.getNumSubscribers() == 0 && save_cloud == false)
     {
         ROS_WARN("No one is asking for a point cloud :)");
     }
@@ -571,7 +574,7 @@ void CdynamicCalibration::getFDisparities(const ug_stereomatcher::foveatedstackC
 
     }
 
-    if(pub_cloud_resized_.getNumSubscribers() == 0)
+    if(pub_cloud_resized_.getNumSubscribers() == 0 && save_cloud == false)
     {
         ROS_WARN("No one is asking for a resized point cloud :)");
     }
@@ -1196,7 +1199,7 @@ int main(int argc, char* argv[])
         /**/
     }
 
-    ROS_INFO_STREAM("Sampling every: " << rU_.sampling << " pixels!");
+    ROS_INFO_STREAM("Sampling every: " << rU_.sampling << " pixels! ");
 
     ros::MultiThreadedSpinner s(2);
     ros::spin(s);

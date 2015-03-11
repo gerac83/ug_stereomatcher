@@ -86,7 +86,6 @@ SET(CUDA_NVCC_FLAGS "-gencode arch=compute_20,code=sm_20 -gencode arch=compute_3
 ADD_DEFINITIONS(-DCUDA_BUILD)
 SET(CMAKE_CXX_FLAGS "-O3")
 SET (LIB_NAMES opencv_core opencv_features2d opencv_flann opencv_gpu
-               opencv_nonfree
                opencv_highgui opencv_imgproc opencv_calib3d)
 
 FOREACH(lib ${LIB_NAMES})
