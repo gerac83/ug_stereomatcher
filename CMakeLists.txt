@@ -35,7 +35,7 @@ generate_messages(
 )
 
 catkin_package(
-  CATKIN_DEPENDS cv_bridge image_transport opencv2 roscpp sensor_msgs std_msgs message_runtime pcl_ros stereo_msgs
+  CATKIN_DEPENDS cv_bridge image_transport libopencv-dev roscpp sensor_msgs std_msgs message_runtime pcl_ros stereo_msgs
 )
 
 include_directories(include)
@@ -43,7 +43,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-find_package(OpenCV)
+find_package(OpenCV 2)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 ### testing non fovea (working)
@@ -85,34 +85,20 @@ SET(CUDA_NVCC_FLAGS "-gencode arch=compute_20,code=sm_20 -gencode arch=compute_3
 
 ADD_DEFINITIONS(-DCUDA_BUILD)
 SET(CMAKE_CXX_FLAGS "-O3")
-SET (LIB_NAMES opencv_core opencv_features2d opencv_flann opencv_gpu
-               opencv_highgui opencv_imgproc opencv_calib3d)
 
-FOREACH(lib ${LIB_NAMES})
-  FIND_LIBRARY(LIB_${lib} ${lib})
-  IF (LIB_${lib})
-    MESSAGE(STATUS "found library '${lib}': ${LIB_${lib}}")
-  ELSE (LIB_${lib})
-    MESSAGE(FATAL_ERROR "cannot find library '${lib}' - go and get it!! :)")
-  ENDIF (LIB_${lib})
-  LIST(APPEND LIBS ${LIB_${lib}})
-ENDFOREACH(lib)
 include_directories(/usr/local/cuda/samples/common/inc)# /usr/local/cuda-5.5/lib64)  
 
 CUDA_ADD_LIBRARY(MatchLib src/gpu_matcher/MatchLib.cu)
 add_library(MatchGPULib src/gpu_matcher/MatchGPULib.cpp)
 add_library(convolutionSeparable_gold src/gpu_matcher/convolutionSeparable_gold.cpp)
 
-FOREACH(lib ${LIB_NAMES})
-  target_link_libraries(MatchGPULib ${LIBS} )
-  target_link_libraries(convolutionSeparable_gold ${LIBS})
-ENDFOREACH(lib)
+target_link_libraries(MatchGPULib ${OpenCV_LIBRARIES} )
+target_link_libraries(convolutionSeparable_gold ${OpenCV_LIBRARIES})
 
 target_link_libraries(MatchGPULib MatchLib convolutionSeparable_gold)
 
-FOREACH(lib ${LIB_NAMES})
-  target_link_libraries(MatchLib ${LIBS})
-ENDFOREACH(lib)
+target_link_libraries(MatchLib ${OpenCV_LIBRARIES})
+
 
 add_executable(UG_matcher_gpu src/gpu_matcher/UG_GPU_matcher.cpp)
 #target_link_libraries(UG_matcher_gpu shrutil_x86_64 cutil_x86_64)
