@@ -418,7 +418,7 @@ public:
             free(stackDisp);
 
 
-        }else{ /* this part can aslo generate foveated version, but it is not stack of images , if foveated is set to 1 */
+        }else{ /* this part can also generate foveated version, but it is not stack of images , if foveated is set to 1 */
             ros::WallTime start = ros::WallTime::now();
             finDisp = mgpu.match(cv_ptrL,cv_ptrR,foveated);
             ros::WallTime end = ros::WallTime::now();
@@ -712,7 +712,7 @@ private:
         ROS_INFO_STREAM("Path of the node: " << ros::package::getPath("ug_stereomatcher"));
 
         string out_imageL = ros::package::getPath("ug_stereomatcher") + "/" + str1;
-        string out_imageR = ros::package::getPath("ug_stereomatche") + "/" + str2;
+        string out_imageR = ros::package::getPath("ug_stereomatcher") + "/" + str2;
         ROS_INFO("Saving left image to: %s", out_imageL.c_str());
         ROS_INFO("Saving right image to: %s", out_imageR.c_str());
 
