@@ -35,7 +35,7 @@ generate_messages(
 )
 
 catkin_package(
-  CATKIN_DEPENDS cv_bridge image_transport libopencv-dev roscpp sensor_msgs std_msgs message_runtime pcl_ros stereo_msgs
+  CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs message_runtime pcl_ros stereo_msgs
 )
 
 include_directories(include)
