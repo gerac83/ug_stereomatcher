@@ -1181,7 +1181,7 @@ int main(int argc, char* argv[])
     ros::init( argc, argv, "RH_dynamicCalibration_node" );
     CdynamicCalibration rU_;
 
-    rU_.sampling =5; // for the non fovea version change this to 5
+    rU_.sampling =10; // for the non fovea version change this to 5
 
     if((argc == 2) && (strcmp(argv[1], "-s") == 0))
     {
