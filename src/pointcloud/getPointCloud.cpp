@@ -140,7 +140,6 @@ public:
     }
     //Functions
     void getImages(const sensor_msgs::ImageConstPtr& imL, const sensor_msgs::ImageConstPtr& imR, const sensor_msgs::CameraInfoConstPtr& msgL, const sensor_msgs::CameraInfoConstPtr& msgR);
-
     void getDisparities(const stereo_msgs::DisparityImageConstPtr& dispX_msg, const stereo_msgs::DisparityImageConstPtr& dispY_msg); // non Fovea 
     void getFDisparities(const ug_stereomatcher::foveatedstackConstPtr dispX_msg, const ug_stereomatcher::foveatedstackConstPtr dispY_msg); // Fovea
 
@@ -223,12 +222,12 @@ void CdynamicCalibration::getImages(const sensor_msgs::ImageConstPtr& imL, const
     ROS_INFO("Getting images and camera info...");
     try
     {
-        cv_ptrL = cv_bridge::toCvCopy(imL, enc::RGB8);
-        cv_ptrR = cv_bridge::toCvCopy(imR, enc::RGB8);
+        cv_ptrL = cv_bridge::toCvCopy(imL, enc::BGR8);
+        cv_ptrR = cv_bridge::toCvCopy(imR, enc::BGR8);
     }
     catch (cv_bridge::Exception& e)
     {
-        //ROS_ERROR("Could not convert from '%s' to 'rgb8'.", imL->encoding.c_str());
+        //ROS_ERROR("Could not convert from '%s' to 'bgr8'.", imL->encoding.c_str());
         return;
     }
 
