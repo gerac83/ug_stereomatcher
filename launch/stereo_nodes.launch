@@ -4,6 +4,7 @@
 	After launching this file, it is necessary to publish the
 	acquisition command. This can be done as below:
 		rostopic pub -1 acquire_images ug_stereomatcher/CamerasSync '{timeStamp: now, data: full}'
+		rosrun tf static_transform_publisher 0 0 0 0 0 0 1 map left_camera 10 (To visualise pointcloud in RVIZ)
 		
 	SoCS, UoG. Gerardo Aragon-Camarasa. January 2015 
 -->
@@ -13,19 +14,23 @@
 	<!-- Parameters -->
 	<param name="foveated" value="0" />
 	<!-- Path where camera information is saved -->
-<!--	<param name="camera_info_url_left" value="$(find ug_stereomatcher)/calibrations/calL.xml" />-->
-<!--	<param name="camera_info_url_right" value="$(find ug_stereomatcher)/calibrations/calR.xml" />-->
+	<param name="camera_info_url_left" value="$(find ug_stereomatcher)/calibrations/calL.xml" />
+	<param name="camera_info_url_right" value="$(find ug_stereomatcher)/calibrations/calR.xml" />
 
 	<!-- Image list file -->
-<!--    <param name="image_list" value="$(find ug_stereomatcher)/src/utils/input_images.xml" />-->
+    <param name="image_list" value="$(find ug_stereomatcher)/src/utils/input_images.xml" />
 
     <!-- Publish images -->
-<!--    <node pkg="ug_stereomatcher" type="UGpublish_images" name="UGpublish_images" output="screen">-->
-<!--	</node>-->
+    <node pkg="ug_stereomatcher" type="UGpublish_images" name="UGpublish_images" output="screen">
+	</node>
 
     <!-- Point cloud node -->
-	<!--<node pkg="ug_stereomatcher" type="UGpoint_cloud" name="UGpoint_cloud" output="screen">
+	<node pkg="ug_stereomatcher" type="UGpoint_cloud" name="UGpoint_cloud" output="screen">
 	</node>-->
+	
+	<!-- Vizualise disparity images -->
+	<node pkg="ug_stereomatcher" type="UGdisp_image" name="UGdisp_image" output="screen">
+	</node>
 
 	<!-- GPU stereo matcher -->
 	<node pkg="ug_stereomatcher" type="matcher.py" name="matcher_py" output="screen">

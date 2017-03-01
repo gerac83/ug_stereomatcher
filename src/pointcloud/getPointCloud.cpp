@@ -34,6 +34,7 @@ Update 06.02.15
 1 - destLevel is always initialised with 0. No need to specify the destination level anymore.
 
 */
+#include <ros/package.h>
 #include <ug_stereomatcher/ug_stereomatcher.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
@@ -327,7 +328,7 @@ void CdynamicCalibration::getDisparities(const stereo_msgs::DisparityImageConstP
         if(save_cloud)
         {
             ROS_INFO("Saving point cloud to a file");
-            pcl::io::savePCDFileASCII ("test_pcd.pcd", *point_cloud_ptr);
+            pcl::io::savePCDFileASCII (ros::package::getPath("ug_stereomatcher") + "/test_pcd.pcd", *point_cloud_ptr);
         }
 
         ROS_INFO("DONE!");
@@ -356,12 +357,12 @@ void CdynamicCalibration::getDisparities(const stereo_msgs::DisparityImageConstP
         point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
         point_cloud_ptr->height = 1;
 
-        ROS_INFO_STREAM("Size point cloud: " << (int) point_cloud_ptr->points.size());
+        ROS_INFO_STREAM("Size point cloud resized: " << (int) point_cloud_ptr->points.size());
 
         if(save_cloud)
         {
             ROS_INFO("Saving point cloud to a file");
-            pcl::io::savePCDFileASCII ("test_pcd_resized.pcd", *point_cloud_ptr);
+            pcl::io::savePCDFileASCII (ros::package::getPath("ug_stereomatcher") + "/test_pcd_resized.pcd", *point_cloud_ptr);
         }
 
         ROS_INFO("DONE!");
@@ -1182,7 +1183,7 @@ int main(int argc, char* argv[])
     ros::init( argc, argv, "RH_dynamicCalibration_node" );
     CdynamicCalibration rU_;
 
-    rU_.sampling =10; // for the non fovea version change this to 5
+    rU_.sampling =1; // for the non fovea version change this to 5
 
     if((argc == 2) && (strcmp(argv[1], "-s") == 0))
     {
