@@ -10,8 +10,8 @@
 	 /././rightn.tif
  -->
 <images>
-/././left1.tif
-/././right1.tif
+./left.tif
+./right.tif
 </images>
 </opencv_storage>
 

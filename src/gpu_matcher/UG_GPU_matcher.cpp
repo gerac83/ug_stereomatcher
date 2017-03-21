@@ -186,7 +186,7 @@ public:
 
             ROS_INFO_STREAM("fov Images matched!");
 
-            dataL = (float**)malloc(mgpu.getFoveaHeight() *
+            dataL = (float**)malloc(mgpu.getFoveaHeight() * 
                                     mgpu.getFoveateLevel() * 3 * sizeof(float*));
             dataR = (float**)malloc(mgpu.getFoveaHeight() *
                                     mgpu.getFoveateLevel() * 3 * sizeof(float*));

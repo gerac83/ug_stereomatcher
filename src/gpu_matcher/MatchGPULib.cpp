@@ -8,6 +8,9 @@
 
 #include <highgui.h>
 
+#include <iostream>
+#include <vector>
+
 // CUDA runtime
 #include <cuda_runtime.h>
 
@@ -108,25 +111,25 @@ extern "C" void compareSquareIm(
 );
 
 extern "C" void compareImMove(
-                              float *d_Dst,
-                              cudaArray *a_Src,
-                              cudaArray *dispx,
-                              int imageW,
-                              int imageH,
-                              float thresholdx,
-                              float thresholdy
-                              );
+    float *d_Dst,
+    cudaArray *a_Src,
+    cudaArray *dispx,
+    int imageW,
+    int imageH,
+    float thresholdx,
+    float thresholdy
+);
 
 extern "C" void calculateImMoveCorr(
-                                    float *d_Dst,
-                                    cudaArray *dispx,
-                                    cudaArray *dispy,
-                                    cudaArray *a_Src,
-                                    int imageW,
-                                    int imageH,
-                                    float thresholdx,
-                                    float thresholdy
-                                    );
+    float *d_Dst,
+    cudaArray *dispx,
+    cudaArray *dispy,
+    cudaArray *a_Src,
+    int imageW,
+    int imageH,
+    float thresholdx,
+    float thresholdy
+);
 
 
 extern "C" void calculateMeanCorr(
@@ -245,33 +248,33 @@ extern "C" void convolutionColumnsGPUTa(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-MatchGPULib::MatchGPULib(int argc, char **argv) 
+MatchGPULib::MatchGPULib(int argc, char **argv)
 {
-	//Use command-line specified CUDA device, otherwise use device with highest Gflops/s
-	findCudaDevice(argc, (const char **)argv);
-	foveatedmatching = 0; /* The flag will be set later on according to the matcher */
-	fovH = 0;
-	fovW = 0;
-	
-	if (argc > 2){
-		foveatelevel = atoi(argv[2]);
-	}else{
-		/*unless otherwise defined on command line*/
-		foveatelevel=7;
-	}
+    //Use command-line specified CUDA device, otherwise use device with highest Gflops/s
+    findCudaDevice(argc, (const char **)argv);
+    foveatedmatching = 0; /* The flag will be set later on according to the matcher */
+    fovH = 0;
+    fovW = 0;
+
+    if (argc > 2) {
+        foveatelevel = atoi(argv[2]);
+    } else {
+        /*unless otherwise defined on command line*/
+        foveatelevel=7;
+    }
 }
 
 
-int MatchGPULib::getFoveaWidth(){
-	return fovW;
+int MatchGPULib::getFoveaWidth() {
+    return fovW;
 }
 
-int MatchGPULib::getFoveaHeight(){
-	return fovH;
+int MatchGPULib::getFoveaHeight() {
+    return fovH;
 }
 
-int MatchGPULib::getFoveateLevel(){
-	return foveatelevel;
+int MatchGPULib::getFoveateLevel() {
+    return foveatelevel;
 }
 
 int MatchGPULib::iDivUp(int a, int b)
@@ -282,24 +285,24 @@ int MatchGPULib::iDivUp(int a, int b)
 
 
 /* Mozhgan - aug 2014 */
-void MatchGPULib::setFoveaWidth(int rows ){
-	fovW=rows;
+void MatchGPULib::setFoveaWidth(int rows ) {
+    fovW=rows;
 }
 
-void MatchGPULib::setFoveaHeight(int cols){
-	fovH=cols;
+void MatchGPULib::setFoveaHeight(int cols) {
+    fovH=cols;
 }
 /**/
 
 /* sets the foveated flag passed from RHGPU_matcher*/
 void MatchGPULib::setFoveated(int fov)
 {
-	foveatedmatching = fov;
+    foveatedmatching = fov;
 }
 
-float **MatchGPULib::match(cv_bridge::CvImagePtr cv_ptrL, cv_bridge::CvImagePtr cv_ptrR, int fov){
+float **MatchGPULib::match(cv_bridge::CvImagePtr cv_ptrL, cv_bridge::CvImagePtr cv_ptrR, int fov) {
 
-	int height ,width ,step ,channels;
+    int height ,width ,step ,channels;
     uchar *data, *data2;
     float *h_Kernel, *h_average;
     float **image, **image2,**finDisp;
@@ -314,116 +317,118 @@ float **MatchGPULib::match(cv_bridge::CvImagePtr cv_ptrL, cv_bridge::CvImagePtr 
     channels = 3;
     step=cv_ptrL->image.step;
     foveatedmatching = fov;
-	data = (uchar *) malloc(height * width * channels *sizeof(uchar));
-	data = (uchar *) cv_ptrL->image.data;
-	data2 = (uchar *) malloc(height * width * channels *sizeof(uchar));
-	data2 = (uchar *) cv_ptrR->image.data;
-	
-	image = (float**)malloc(channels * sizeof(float*));
-	image2 = (float**)malloc(channels * sizeof(float*));
-    for(int i=0; i<channels; i++){
-		image[i] = (float*)malloc(height * width * sizeof(float));
-		image2[i] = (float*)malloc(height * width * sizeof(float));
+    data = (uchar *) malloc(height * width * channels *sizeof(uchar));
+    data = (uchar *) cv_ptrL->image.data;
+    data2 = (uchar *) malloc(height * width * channels *sizeof(uchar));
+    data2 = (uchar *) cv_ptrR->image.data;
+
+    image = (float**)malloc(channels * sizeof(float*));
+    image2 = (float**)malloc(channels * sizeof(float*));
+    for(int i=0; i<channels; i++) {
+        image[i] = (float*)malloc(height * width * sizeof(float));
+        image2[i] = (float*)malloc(height * width * sizeof(float));
     }
-    
-    for(int k=0;k<channels;k++)
-		for(int i=0;i<height;i++)
-			for(int j=0;j<width;j++)
-			{
-				*(image[k]+i*width+j) = (float)*(data+i*step+j*channels+k);
-				*(image2[k]+i*width+j) = (float)*(data2+i*step+j*channels+k);
-			}
-			
-	//  1D gaussian kernel function
+
+    for(int k=0; k<channels; k++)
+        for(int i=0; i<height; i++)
+            for(int j=0; j<width; j++)
+            {
+                *(image[k]+i*width+j) = (float)*(data+i*step+j*channels+k);
+                *(image2[k]+i*width+j) = (float)*(data2+i*step+j*channels+k);
+            }
+
+    //  1D gaussian kernel function
     this->gaussiankernel(h_Kernel);
-	
+
     setConvolutionKernel(h_Kernel);
-	*h_average=0.0;
-	*(h_average+1)=0.3333;
-	*(h_average+2)=0.3333;
-	*(h_average+3)=0.3333;
-	*(h_average+4)=0.0;
+    *h_average=0.0;
+    *(h_average+1)=0.3333;
+    *(h_average+2)=0.3333;
+    *(h_average+3)=0.3333;
+    *(h_average+4)=0.0;
 
     setConvolutionAverageKernel(h_average);
 
-	//Building a pyramid 
+    //Building a pyramid
     left = CreatePyramidFromImage(image, channels, height, width, h_Kernel);
     right = CreatePyramidFromImage(image2, channels, height, width, h_Kernel);
-    if(fov==1){
-		leftFoveated = CreateFoveatedPyramid(left, channels, height, width);
-		rightFoveated = CreateFoveatedPyramid(right, channels, height, width);
-		//Foveated Stereo Matching Part
-		disparity = matching(leftFoveated, rightFoveated, channels, height, width);
-		finDisp=hierarchicalDisparity(right[0], disparity, channels, width, height);
-    }else{
-		//Stereo Matching Part
-		disparity = matching(left, right, channels, height, width);
+    if(fov==1) {
+        leftFoveated = CreateFoveatedPyramid(left, channels, height, width);
+        rightFoveated = CreateFoveatedPyramid(right, channels, height, width);
+        //Foveated Stereo Matching Part
+        disparity = matching(leftFoveated, rightFoveated, channels, height, width);
+        finDisp=hierarchicalDisparity(right[0], disparity, channels, width, height);
+    } else {
+        //Stereo Matching Part
+        printf(">>>>>>>>>>>>>>>>>>>>Before\n");
+        disparity = matching(left, right, channels, height, width);
+        printf(">>>>>>>>>>>>>>>>>>>>After\n");
 
-		finDisp = (float**)malloc(channels * sizeof(float*));
-		for(int i=0; i<channels; i++){
-			finDisp[i] = (float*)malloc(height * width * sizeof(float));
-		}
-		//bottom level of the pyramid
-		finDisp = disparity[0];
-    } 
-    
+        finDisp = (float**)malloc(channels * sizeof(float*));
+        for(int i=0; i<channels; i++) {
+            finDisp[i] = (float*)malloc(height * width * sizeof(float));
+        }
+        //bottom level of the pyramid
+        finDisp = disparity[0];
+    }
+
     free(h_Kernel);
     free(h_average);
-/*
-    for (int j=0; j<channels; j++) {
-        free(image[j]);
-        free(image2[j]);
-    }
-    free(image);
-    free(image2);
-*/
-    for(int i=0; i<MAX_LEVEL; i++){
-	for(int k=0;k<channels;k++)
-	    {
-		free(left[i][k]);
-		free(right[i][k]);
-		
-	    }
-	free(left[i]);
-	free(right[i]);
-	
+    /*
+        for (int j=0; j<channels; j++) {
+            free(image[j]);
+            free(image2[j]);
+        }
+        free(image);
+        free(image2);
+    */
+    for(int i=0; i<MAX_LEVEL; i++) {
+        for(int k=0; k<channels; k++)
+        {
+            free(left[i][k]);
+            free(right[i][k]);
+
+        }
+        free(left[i]);
+        free(right[i]);
+
     }
     free(left);
     free(right);
- 
-   
+
+
     cudaDeviceReset();
-    
+
     return finDisp;
 }
 
 /* This function sets the values for the Foveated size */
-int MatchGPULib::initStack(cv_bridge::CvImagePtr cv_ptrL, cv_bridge::CvImagePtr cv_ptrR){
-int height = (int) cv_ptrL->image.rows; /* Tian uses rows as width */
-int width = (int) cv_ptrL->image.cols; /**/
-int heighta[MAX_LEVEL-1],widtha[MAX_LEVEL-1];
-widtha[0]=width;
-heighta[0]=height;
+int MatchGPULib::initStack(cv_bridge::CvImagePtr cv_ptrL, cv_bridge::CvImagePtr cv_ptrR) {
+    int height = (int) cv_ptrL->image.rows; /* Tian uses rows as width */
+    int width = (int) cv_ptrL->image.cols; /**/
+    int heighta[MAX_LEVEL-1],widtha[MAX_LEVEL-1];
+    widtha[0]=width;
+    heighta[0]=height;
 
-for(int i=0; i<foveatelevel; i++)
+    for(int i=0; i<foveatelevel; i++)
     {
-	widtha[i+1]=widtha[i]/SCALE;
-	heighta[i+1]=heighta[i]/SCALE;
+        widtha[i+1]=widtha[i]/SCALE;
+        heighta[i+1]=heighta[i]/SCALE;
     }
 
-int rows=widtha[foveatelevel-1];
-int cols=heighta[foveatelevel-1];
+    int rows=widtha[foveatelevel-1];
+    int cols=heighta[foveatelevel-1];
 
-setFoveaHeight(cols);
-setFoveaWidth(rows);
+    setFoveaHeight(cols);
+    setFoveaWidth(rows);
 
-return 0;
-  }
+    return 0;
+}
 
-/* No longer in use for foveated stack retreival - we use 'matchStackPyramid' instead */ 
-float ***MatchGPULib::matchStack(cv_bridge::CvImagePtr cv_ptrL, cv_bridge::CvImagePtr cv_ptrR){
+/* No longer in use for foveated stack retreival - we use 'matchStackPyramid' instead */
+float ***MatchGPULib::matchStack(cv_bridge::CvImagePtr cv_ptrL, cv_bridge::CvImagePtr cv_ptrR) {
 
-	int height ,width ,step ,channels;
+    int height ,width ,step ,channels;
     uchar *data, *data2;
     float *h_Kernel, *h_average;
     float **image, **image2,**finDisp;
@@ -438,95 +443,95 @@ float ***MatchGPULib::matchStack(cv_bridge::CvImagePtr cv_ptrL, cv_bridge::CvIma
 
     channels = 3;
     step=cv_ptrL->image.step;
-    
-	data = (uchar *) malloc(height * width * channels *sizeof(uchar));
-	data = (uchar *) cv_ptrL->image.data;
-	data2 = (uchar *) malloc(height * width * channels *sizeof(uchar));
-	data2 = (uchar *) cv_ptrR->image.data;
-	
-	image = (float**)malloc(channels * sizeof(float*));
-	image2 = (float**)malloc(channels * sizeof(float*));
-    for(int i=0; i<channels; i++){
-		image[i] = (float*)malloc(height * width * sizeof(float));
-		image2[i] = (float*)malloc(height * width * sizeof(float));
+
+    data = (uchar *) malloc(height * width * channels *sizeof(uchar));
+    data = (uchar *) cv_ptrL->image.data;
+    data2 = (uchar *) malloc(height * width * channels *sizeof(uchar));
+    data2 = (uchar *) cv_ptrR->image.data;
+
+    image = (float**)malloc(channels * sizeof(float*));
+    image2 = (float**)malloc(channels * sizeof(float*));
+    for(int i=0; i<channels; i++) {
+        image[i] = (float*)malloc(height * width * sizeof(float));
+        image2[i] = (float*)malloc(height * width * sizeof(float));
     }
-    
-    for(int k=0;k<channels;k++)
-		for(int i=0;i<height;i++)
-			for(int j=0;j<width;j++)
-			{
-				*(image[k]+i*width+j) = (float)*(data+i*step+j*channels+k);
-				*(image2[k]+i*width+j) = (float)*(data2+i*step+j*channels+k);
-			}
-			
-	//  1D gaussian kernel function
+
+    for(int k=0; k<channels; k++)
+        for(int i=0; i<height; i++)
+            for(int j=0; j<width; j++)
+            {
+                *(image[k]+i*width+j) = (float)*(data+i*step+j*channels+k);
+                *(image2[k]+i*width+j) = (float)*(data2+i*step+j*channels+k);
+            }
+
+    //  1D gaussian kernel function
     this->gaussiankernel(h_Kernel);
-	
+
     setConvolutionKernel(h_Kernel);
-	*h_average=0.0;
-	*(h_average+1)=0.3333;
-	*(h_average+2)=0.3333;
-	*(h_average+3)=0.3333;
-	*(h_average+4)=0.0;
+    *h_average=0.0;
+    *(h_average+1)=0.3333;
+    *(h_average+2)=0.3333;
+    *(h_average+3)=0.3333;
+    *(h_average+4)=0.0;
 
     setConvolutionAverageKernel(h_average);
 
-	//Building a pyramid 
+    //Building a pyramid
     left = CreatePyramidFromImage(image, channels, height, width, h_Kernel);
     right = CreatePyramidFromImage(image2, channels, height, width, h_Kernel);
-    
-	leftFoveated = CreateFoveatedPyramid(left, channels, height, width);
-	rightFoveated = CreateFoveatedPyramid(right, channels, height, width);
+
+    leftFoveated = CreateFoveatedPyramid(left, channels, height, width);
+    rightFoveated = CreateFoveatedPyramid(right, channels, height, width);
 
 
 
-	//Foveated Stereo Matching Part
-	disparity = matching(leftFoveated, rightFoveated, channels, height, width);
-	//finDisp=hierarchicalDisparity(right[0], disparity, channels, width, height);
+    //Foveated Stereo Matching Part
+    disparity = matching(leftFoveated, rightFoveated, channels, height, width);
+    //finDisp=hierarchicalDisparity(right[0], disparity, channels, width, height);
 
-/* debug : print the foveated images
-IplImage *outImg; char string[20];
-    for(int level=0;level<foveatelevel;level++)
-    {
-	outImg = cvCreateImage(cvSize(getFoveaWidth(),getFoveaHeight()), 8, 3);  
+    /* debug : print the foveated images
+    IplImage *outImg; char string[20];
+        for(int level=0;level<foveatelevel;level++)
+        {
+    	outImg = cvCreateImage(cvSize(getFoveaWidth(),getFoveaHeight()), 8, 3);
 
-	for(int k=0;k<channels;k++)
-	    for(int l=0;l<outImg->height;l++)
-		for(int m=0;m<outImg->width;m++)
-		{
-		    *(outImg->imageData+l*outImg->widthStep+m*channels+k) = (uchar)*(disparity[level][k]+l*outImg->width+m);
+    	for(int k=0;k<channels;k++)
+    	    for(int l=0;l<outImg->height;l++)
+    		for(int m=0;m<outImg->width;m++)
+    		{
+    		    *(outImg->imageData+l*outImg->widthStep+m*channels+k) = (uchar)*(disparity[level][k]+l*outImg->width+m);
 
-	        }
-	sprintf(string,"foveatedDisp%d.bmp",level+1);
-	cvSaveImage(string,outImg); 
-}
-cvReleaseImage(&outImg); // valgrind
-*/    
+    	        }
+    	sprintf(string,"foveatedDisp%d.bmp",level+1);
+    	cvSaveImage(string,outImg);
+    }
+    cvReleaseImage(&outImg); // valgrind
+    */
 
     free(h_Kernel);
     free(h_average);
 
-    for(int i=0; i<MAX_LEVEL; i++){
-	for(int k=0;k<channels;k++)
-	    {
-		free(left[i][k]);
-		free(right[i][k]);
-		
-	    }
-	free(left[i]);
-	free(right[i]);
-	
+    for(int i=0; i<MAX_LEVEL; i++) {
+        for(int k=0; k<channels; k++)
+        {
+            free(left[i][k]);
+            free(right[i][k]);
+
+        }
+        free(left[i]);
+        free(right[i]);
+
     }
     free(left);
     free(right);
 
     cudaDeviceReset();
-    
+
     return disparity;
 }
 
 /* returns disparity image (x and y) and confidence map of the fovea + the left fovea (rgb) */
-float ***MatchGPULib::matchStackPyramid(cv_bridge::CvImagePtr cv_ptrL, cv_bridge::CvImagePtr cv_ptrR, float ***leftFov, float ***rightFov){
+float ***MatchGPULib::matchStackPyramid(cv_bridge::CvImagePtr cv_ptrL, cv_bridge::CvImagePtr cv_ptrR, float ***leftFov, float ***rightFov) {
 
     int height ,width ,step ,channels;
     uchar *data, *data2;
@@ -544,125 +549,125 @@ float ***MatchGPULib::matchStackPyramid(cv_bridge::CvImagePtr cv_ptrL, cv_bridge
 
     channels = 3;
     step=cv_ptrL->image.step;
-   
-	data = (uchar *) malloc(height * width * channels *sizeof(uchar));
-	data = (uchar *) cv_ptrL->image.data;
-	data2 = (uchar *) malloc(height * width * channels *sizeof(uchar));
-	data2 = (uchar *) cv_ptrR->image.data;
-	
-	image = (float**)malloc(channels * sizeof(float*));
-	image2 = (float**)malloc(channels * sizeof(float*));
-    for(int i=0; i<channels; i++){
-		image[i] = (float*)malloc(height * width * sizeof(float));
-		image2[i] = (float*)malloc(height * width * sizeof(float));
+
+    data = (uchar *) malloc(height * width * channels *sizeof(uchar));
+    data = (uchar *) cv_ptrL->image.data;
+    data2 = (uchar *) malloc(height * width * channels *sizeof(uchar));
+    data2 = (uchar *) cv_ptrR->image.data;
+
+    image = (float**)malloc(channels * sizeof(float*));
+    image2 = (float**)malloc(channels * sizeof(float*));
+    for(int i=0; i<channels; i++) {
+        image[i] = (float*)malloc(height * width * sizeof(float));
+        image2[i] = (float*)malloc(height * width * sizeof(float));
     }
-    
-    for(int k=0;k<channels;k++)
-		for(int i=0;i<height;i++)
-			for(int j=0;j<width;j++)
-			{
-				*(image[k]+i*width+j) = (float)*(data+i*step+j*channels+k);
-				*(image2[k]+i*width+j) = (float)*(data2+i*step+j*channels+k);
-			}
-			
-	//  1D gaussian kernel function
+
+    for(int k=0; k<channels; k++)
+        for(int i=0; i<height; i++)
+            for(int j=0; j<width; j++)
+            {
+                *(image[k]+i*width+j) = (float)*(data+i*step+j*channels+k);
+                *(image2[k]+i*width+j) = (float)*(data2+i*step+j*channels+k);
+            }
+
+    //  1D gaussian kernel function
     this->gaussiankernel(h_Kernel);
-	
+
     setConvolutionKernel(h_Kernel);
-	*h_average=0.0;
-	*(h_average+1)=0.3333;
-	*(h_average+2)=0.3333;
-	*(h_average+3)=0.3333;
-	*(h_average+4)=0.0;
+    *h_average=0.0;
+    *(h_average+1)=0.3333;
+    *(h_average+2)=0.3333;
+    *(h_average+3)=0.3333;
+    *(h_average+4)=0.0;
 
     setConvolutionAverageKernel(h_average);
 
-	//Building a pyramid 
+    //Building a pyramid
     left = CreatePyramidFromImage(image, channels, height, width, h_Kernel);
     right = CreatePyramidFromImage(image2, channels, height, width, h_Kernel);
-    
-	leftFoveated = CreateFoveatedPyramid(left, channels, height, width);
-	rightFoveated = CreateFoveatedPyramid(right, channels, height, width);
 
-/* DEBUG
-    int heightp[MAX_LEVEL-1], widthp[MAX_LEVEL-1];
-    int rows,cols;
-    IplImage *outImg;char string[20];
+    leftFoveated = CreateFoveatedPyramid(left, channels, height, width);
+    rightFoveated = CreateFoveatedPyramid(right, channels, height, width);
 
-    widthp[0] = width;
-    heightp[0] = height;
-    for(int i=0; i<MAX_LEVEL; i++)
-    {
-		widthp[i+1]=widthp[i]/SCALE;
-		heightp[i+1]=heightp[i]/SCALE;
+    /* DEBUG
+        int heightp[MAX_LEVEL-1], widthp[MAX_LEVEL-1];
+        int rows,cols;
+        IplImage *outImg;char string[20];
+
+        widthp[0] = width;
+        heightp[0] = height;
+        for(int i=0; i<MAX_LEVEL; i++)
+        {
+    		widthp[i+1]=widthp[i]/SCALE;
+    		heightp[i+1]=heightp[i]/SCALE;
+        }
+        rows=widthp[foveatelevel-1];
+        cols=heightp[foveatelevel-1];
+
+        for(int level=MAX_LEVEL-1;level>=foveatelevel-1;level--)
+        {
+    		leftFoveated[level] = left[level];
+
+    /* DEBUG - prints left image from pyramid
+    	outImg = cvCreateImage(cvSize(widthp[level],heightp[level]), 8, 3);
+    	for(int k=0;k<channels;k++)
+    	    for(int l=0;l<outImg->height;l++)
+    		for(int m=0;m<outImg->width;m++)
+    		{
+    		    *(outImg->imageData+l*outImg->widthStep+m*channels+k) = (uchar)*(leftFoveated[level][k]+l*outImg->width+m);
+
+    	        }
+    	sprintf(string,"LPyrfoveated%d.bmp",level+1);
+    	cvSaveImage(string,outImg);
+
     }
-    rows=widthp[foveatelevel-1];
-    cols=heightp[foveatelevel-1];
 
-    for(int level=MAX_LEVEL-1;level>=foveatelevel-1;level--)
-    {
-		leftFoveated[level] = left[level];     
+        for(int level=MAX_LEVEL-1;level>=foveatelevel-1;level--)
+        {
+    		rightFoveated[level] = right[level];
 
-/* DEBUG - prints left image from pyramid
-	outImg = cvCreateImage(cvSize(widthp[level],heightp[level]), 8, 3);  
-	for(int k=0;k<channels;k++)
-	    for(int l=0;l<outImg->height;l++)
-		for(int m=0;m<outImg->width;m++)
-		{
-		    *(outImg->imageData+l*outImg->widthStep+m*channels+k) = (uchar)*(leftFoveated[level][k]+l*outImg->width+m);
-	
-	        }
-	sprintf(string,"LPyrfoveated%d.bmp",level+1);
-	cvSaveImage(string,outImg); 
- 
-}
+    /* DEBUG  - prints right image from pyramid
+    	outImg = cvCreateImage(cvSize(widthp[level],heightp[level]), 8, 3);
+    	for(int k=0;k<channels;k++)
+    	    for(int l=0;l<outImg->height;l++)
+    		for(int m=0;m<outImg->width;m++)
+    		{
+    		    *(outImg->imageData+l*outImg->widthStep+m*channels+k) = (uchar)*(rightFoveated[level][k]+l*outImg->width+m);
 
-    for(int level=MAX_LEVEL-1;level>=foveatelevel-1;level--)
-    {
-		rightFoveated[level] = right[level];     
-
-/* DEBUG  - prints right image from pyramid
-	outImg = cvCreateImage(cvSize(widthp[level],heightp[level]), 8, 3);  
-	for(int k=0;k<channels;k++)
-	    for(int l=0;l<outImg->height;l++)
-		for(int m=0;m<outImg->width;m++)
-		{
-		    *(outImg->imageData+l*outImg->widthStep+m*channels+k) = (uchar)*(rightFoveated[level][k]+l*outImg->width+m);
-	
-	        }
-	sprintf(string,"RPyrfoveated%d.bmp",level+1);
-	cvSaveImage(string,outImg); 
-}*/
+    	        }
+    	sprintf(string,"RPyrfoveated%d.bmp",level+1);
+    	cvSaveImage(string,outImg);
+    }*/
 
 
-/* copy the data to the pointer array , we want to publish this on ros */
-for (int m = 0; m < MAX_LEVEL ; m++){ /* 14 is max level, but foveatelevel is 7 */
-    leftFov[m] = leftFoveated[m]; 
-    rightFov[m] = rightFoveated[m]; 
-}
+    /* copy the data to the pointer array , we want to publish this on ros */
+    for (int m = 0; m < MAX_LEVEL ; m++) { /* 14 is max level, but foveatelevel is 7 */
+        leftFov[m] = leftFoveated[m];
+        rightFov[m] = rightFoveated[m];
+    }
 
-	//Foveated Stereo Matching Part
-	disparity = matching(leftFoveated, rightFoveated, channels, height, width);
-	//finDisp=hierarchicalDisparity(right[0], disparity, channels, width, height);
+    //Foveated Stereo Matching Part
+    disparity = matching(leftFoveated, rightFoveated, channels, height, width);
+    //finDisp=hierarchicalDisparity(right[0], disparity, channels, width, height);
 
-/* DEBUG - prints disparity image
-    for(int level=0;level<foveatelevel;level++)
-    {
-	outImg = cvCreateImage(cvSize(getFoveaWidth(),getFoveaHeight()), 8, 3);  
+    /* DEBUG - prints disparity image
+        for(int level=0;level<foveatelevel;level++)
+        {
+    	outImg = cvCreateImage(cvSize(getFoveaWidth(),getFoveaHeight()), 8, 3);
 
-	for(int k=0;k<channels;k++)
-	    for(int l=0;l<outImg->height;l++)
-		for(int m=0;m<outImg->width;m++)
-		{
-		    *(outImg->imageData+l*outImg->widthStep+m*channels+k) = (uchar)*(disparity[level][k]+l*outImg->width+m);
-	 
+    	for(int k=0;k<channels;k++)
+    	    for(int l=0;l<outImg->height;l++)
+    		for(int m=0;m<outImg->width;m++)
+    		{
+    		    *(outImg->imageData+l*outImg->widthStep+m*channels+k) = (uchar)*(disparity[level][k]+l*outImg->width+m);
 
-	        }
-	sprintf(string,"foveatedDisp%d.bmp",level+1);
-	cvSaveImage(string,outImg); 
-}
-*/
-    
+
+    	        }
+    	sprintf(string,"foveatedDisp%d.bmp",level+1);
+    	cvSaveImage(string,outImg);
+    }
+    */
+
     free(h_Kernel);
     free(h_average);
 
@@ -673,23 +678,23 @@ for (int m = 0; m < MAX_LEVEL ; m++){ /* 14 is max level, but foveatelevel is 7 
     free(image);
     free(image2);
 
-/* Don't
-   for(int i=0; i<MAX_LEVEL; i++){
-	for(int k=0;k<channels;k++)
-	    {
-		free(left[i][k]);
-		free(right[i][k]);
-		
-	    }
-	free(left[i]);
-	free(right[i]);
-	
-    }
-    free(left);
-    free(right);
- */
+    /* Don't
+       for(int i=0; i<MAX_LEVEL; i++){
+    	for(int k=0;k<channels;k++)
+    	    {
+    		free(left[i][k]);
+    		free(right[i][k]);
+
+    	    }
+    	free(left[i]);
+    	free(right[i]);
+
+        }
+        free(left);
+        free(right);
+     */
     cudaDeviceReset();
-  
+
 // cvReleaseImage(&outImg); // valgrind (only if we used cvCreateImage)
     return disparity;
 }
@@ -739,11 +744,11 @@ void MatchGPULib::gaussiankernel(float* k)
         *(k+i)=0;
         for(int n=0; n<precision; n++)
         {
-	    weight[n]=0;
-	    tmp=i+0.5-mid+(float)(n/((float)precision-1));
-	    weight[n]=gaussian(tmp);
-	    *(k+i)=*(k+i)+weight[n];
-	}
+            weight[n]=0;
+            tmp=i+0.5-mid+(float)(n/((float)precision-1));
+            weight[n]=gaussian(tmp);
+            *(k+i)=*(k+i)+weight[n];
+        }
         *(k+i)=*(k+i)/precision;
         kern=kern+*(k+i);
     }
@@ -753,16 +758,17 @@ void MatchGPULib::gaussiankernel(float* k)
 //        printf("kernel[%d]=%f\n",i,*(k+i));
     }
 
-*k=0.0816475;
-*(k+1)=0.218507;
-*(k+2)=0.303281;
-*(k+3)=0.218507;
-*(k+4)=0.0816475;
-kern=0;
+    *k=0.0816475;
+    *(k+1)=0.218507;
+    *(k+2)=0.303281;
+    *(k+3)=0.218507;
+    *(k+4)=0.0816475;
+    kern=0;
     for(int i=0; i<KERNEL_LENGTH; i++)
     {
-        kern=kern+*(k+i);}
-    for(int i=0; i<KERNEL_LENGTH; i++){
+        kern=kern+*(k+i);
+    }
+    for(int i=0; i<KERNEL_LENGTH; i++) {
         *(k+i)=*(k+i)/kern;
         printf("kernel[%d]=%f\n",i,*(k+i));
     }
@@ -778,36 +784,36 @@ float ** MatchGPULib::convolutionCPU(float** im, float* h_Kernel, int channels, 
     float** outim;
 
     outim = (float**)malloc(channels * sizeof(float*));
-    for(int i=0; i<channels; i++){
-	outim[i] = (float*)malloc(imageW * imageH * sizeof(float));
+    for(int i=0; i<channels; i++) {
+        outim[i] = (float*)malloc(imageW * imageH * sizeof(float));
     }
     h_Input = (float*)malloc(imageW * imageH * sizeof(float));
 //    h_OutputCPU = (float*)malloc(imageW * imageH * sizeof(float));
     h_Buffer = (float*)malloc(imageW * imageH * sizeof(float));
 
-    for(int j=0;j<channels;j++) 
+    for(int j=0; j<channels; j++)
     {
-	h_Input = im[j];
+        h_Input = im[j];
 
 //	printf(" ...running convolutionRowCPU()\n");
-	convolutionRowCPU(
+        convolutionRowCPU(
             h_Buffer,
             h_Input,
             h_Kernel,
             imageW,
             imageH,
             KERNEL_RADIUS
-	);
+        );
 
 //	printf(" ...running convolutionColumnCPU()\n");
-	convolutionColumnCPU(
+        convolutionColumnCPU(
             outim[j], //h_OutputCPU,
             h_Buffer,
             h_Kernel,
             imageW,
             imageH,
             KERNEL_RADIUS
-	);
+        );
 
 //	for(int i=0; i<imageW * imageH; i++)
 //	    outim[j][i] = h_OutputCPU[i];
@@ -824,29 +830,29 @@ float ** MatchGPULib::subsampledimageCPU(float**im, float scalefactor, int chann
     float** outim, **temp;
 
     outim = (float**)malloc(channels * sizeof(float*));
-    for(int i=0; i<channels; i++){
-	outim[i] = (float*)malloc(imageW2 * imageH2 * sizeof(float));
+    for(int i=0; i<channels; i++) {
+        outim[i] = (float*)malloc(imageW2 * imageH2 * sizeof(float));
     }
     temp = (float**)malloc(channels * sizeof(float*));
-    for(int i=0; i<channels; i++){
-	temp[i] = (float*)malloc(imageW2 * imageH * sizeof(float));
+    for(int i=0; i<channels; i++) {
+        temp[i] = (float*)malloc(imageW2 * imageH * sizeof(float));
     }
 
-   for(int k=0; k<channels; k++){
-    for(int i=0; i<imageH; i++)
-	for(int j=0; j<imageW2; j++)
-	{
-	    temp[k][i*imageW2+j]=im[k][i*imageW+(int)(j*scalefactor)]*(scalefactor*j-(int)(j*scalefactor))
-				+im[k][i*imageW+(int)(j*scalefactor)+1]*(1-(scalefactor*j-(int)(j*scalefactor)));
-	}
+    for(int k=0; k<channels; k++) {
+        for(int i=0; i<imageH; i++)
+            for(int j=0; j<imageW2; j++)
+            {
+                temp[k][i*imageW2+j]=im[k][i*imageW+(int)(j*scalefactor)]*(scalefactor*j-(int)(j*scalefactor))
+                                     +im[k][i*imageW+(int)(j*scalefactor)+1]*(1-(scalefactor*j-(int)(j*scalefactor)));
+            }
 
-    for(int i=0; i<imageH2; i++)
-	for(int j=0; j<imageW2; j++)
-	{
-	    outim[k][i*imageW2+j]=temp[k][(int)(i*scalefactor)*imageW2+j]*(i*scalefactor-(int)(i*scalefactor))
-				+temp[k][(int)(i*scalefactor+1)*imageW2+j]*(1-(i*scalefactor-(int)(i*scalefactor)));
-	}
-   }
+        for(int i=0; i<imageH2; i++)
+            for(int j=0; j<imageW2; j++)
+            {
+                outim[k][i*imageW2+j]=temp[k][(int)(i*scalefactor)*imageW2+j]*(i*scalefactor-(int)(i*scalefactor))
+                                      +temp[k][(int)(i*scalefactor+1)*imageW2+j]*(1-(i*scalefactor-(int)(i*scalefactor)));
+            }
+    }
 
     for (int j=0; j<channels; j++) {
         free(temp[j]);
@@ -870,12 +876,12 @@ float ** MatchGPULib::convolutionGPU(float** im, int channels, int imageW, int i
 
     StopWatchInterface *hTimer = NULL;
     sdkCreateTimer(&hTimer);
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
+    sdkResetTimer(&hTimer);
+    sdkStartTimer(&hTimer);
     outim = (float**)malloc(channels * sizeof(float*));
-    for(int i=0; i<channels; i++){
-	outim[i] = (float*)malloc(imageW * imageH * sizeof(float));
-    } 
+    for(int i=0; i<channels; i++) {
+        outim[i] = (float*)malloc(imageW * imageH * sizeof(float));
+    }
 
     tempW=iDivUp(imageW, COLUMNS_BLOCKDIM_X)*COLUMNS_BLOCKDIM_X;
     tempH=iDivUp(imageH, (COLUMNS_RESULT_STEPS * COLUMNS_BLOCKDIM_Y))*(COLUMNS_RESULT_STEPS * COLUMNS_BLOCKDIM_Y);
@@ -884,52 +890,52 @@ float ** MatchGPULib::convolutionGPU(float** im, int channels, int imageW, int i
     checkCudaErrors(cudaMalloc((void **)&d_Output,  imageW * imageH * sizeof(float)));
     checkCudaErrors(cudaMalloc((void **)&d_Buffer , tempW * tempH * sizeof(float)));
 
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+    sdkStopTimer(&hTimer);
+    gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
 //printf("gpuTime = %.5f \n",gpuTime);
 
-    for(int j=0;j<channels;j++) 
+    for(int j=0; j<channels; j++)
     {
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
-	checkCudaErrors(cudaMemcpy(d_Input, im[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
+        checkCudaErrors(cudaMemcpy(d_Input, im[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
 
-	checkCudaErrors(cudaDeviceSynchronize());
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        checkCudaErrors(cudaDeviceSynchronize());
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
 //printf("gpuTime = %.5f \n",gpuTime);
-	excutionTime[8] = gpuTime + excutionTime[8];
+        excutionTime[8] = gpuTime + excutionTime[8];
 
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
 
-	convolutionRowsGPU(
-	    d_Buffer,
-	    d_Input,
-	    imageW,
-	    imageH
+        convolutionRowsGPU(
+            d_Buffer,
+            d_Input,
+            imageW,
+            imageH
         );
-	checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaDeviceSynchronize());
 
         convolutionColumnsGPU(
-	    d_Output,
-	    d_Buffer,
-	    imageW,
-	    imageH
+            d_Output,
+            d_Buffer,
+            imageW,
+            imageH
         );
 
-	checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaDeviceSynchronize());
 
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[7] = gpuTime + excutionTime[7];
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[7] = gpuTime + excutionTime[7];
 
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
-	checkCudaErrors(cudaMemcpy(outim[j], d_Output, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[8] = gpuTime + excutionTime[8];
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
+        checkCudaErrors(cudaMemcpy(outim[j], d_Output, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[8] = gpuTime + excutionTime[8];
     }
 
 //	printf("convolutionSeparable, Throughput = %.4f MPixels/sec, Time = %.5f s, Size = %u Pixels, NumDevsUsed = %i, Workgroup = %u\n",
@@ -937,7 +943,7 @@ float ** MatchGPULib::convolutionGPU(float** im, int channels, int imageW, int i
 
 //	printf("\nReading back GPU results...\n\n");
 
-	sdkResetTimer(&hTimer);
+    sdkResetTimer(&hTimer);
 //	sdkStartTimer(&hTimer);
 
     checkCudaErrors(cudaFree(d_Buffer));
@@ -948,9 +954,9 @@ float ** MatchGPULib::convolutionGPU(float** im, int channels, int imageW, int i
 //	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
 //printf("gpuTime = %.5f \n",gpuTime);
 
-sdkDeleteTimer(&hTimer); // valgrind
+    sdkDeleteTimer(&hTimer); // valgrind
     return outim;
-	
+
 }
 
 
@@ -970,8 +976,8 @@ float ** MatchGPULib::subsampledimageGPU(float**im, float scalefactor, int chann
     cudaChannelFormatDesc floatTex = cudaCreateChannelDesc<float>();
 
     outim = (float**)malloc(channels * sizeof(float*));
-    for(int i=0; i<channels; i++){
-	outim[i] = (float*)malloc(imageW2 * imageH2 * sizeof(float));
+    for(int i=0; i<channels; i++) {
+        outim[i] = (float*)malloc(imageW2 * imageH2 * sizeof(float));
     }
 
 
@@ -980,47 +986,47 @@ float ** MatchGPULib::subsampledimageGPU(float**im, float scalefactor, int chann
     checkCudaErrors(cudaMallocArray(&a_Src, &floatTex, imageW, imageH));
 
 
-   for(int j=0; j<channels; j++){
+    for(int j=0; j<channels; j++) {
 
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
 //	checkCudaErrors(cudaMemcpy(d_Input, im[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-	checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, im[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[9] = gpuTime + excutionTime[9];
+        checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, im[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[9] = gpuTime + excutionTime[9];
 
-	checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaDeviceSynchronize());
 
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
-	subsampleGPU(
-	    d_Output,
-	    a_Src,
-	    imageW,
-	    imageH,
-	    scalefactor,
-	    imageW2,
-	    imageH2
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
+        subsampleGPU(
+            d_Output,
+            a_Src,
+            imageW,
+            imageH,
+            scalefactor,
+            imageW2,
+            imageH2
         );
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[10] = gpuTime + excutionTime[10];
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[10] = gpuTime + excutionTime[10];
 
-	checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaDeviceSynchronize());
 
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
-	checkCudaErrors(cudaMemcpy(outim[j], d_Output, imageW2 * imageH2 * sizeof(float), cudaMemcpyDeviceToHost));
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[9] = gpuTime + excutionTime[9];
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
+        checkCudaErrors(cudaMemcpy(outim[j], d_Output, imageW2 * imageH2 * sizeof(float), cudaMemcpyDeviceToHost));
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[9] = gpuTime + excutionTime[9];
     }
 
     cudaFreeArray(a_Src);
     cudaFree(d_Output);
 
-sdkDeleteTimer(&hTimer); // valgrind
+    sdkDeleteTimer(&hTimer); // valgrind
     return outim;
 }
 
@@ -1033,7 +1039,7 @@ float *** MatchGPULib::CreatePyramidFromImage(float **im, int channels, int heig
 //    float **pyramid[MAX_LEVEL][LAYER];
     float ****pyramid;
 //    float **DOGpyramid[MAX_LEVEL][LAYER];
-float ***p;
+    float ***p;
 
     height=heightInit;
     width=widthInit;
@@ -1043,7 +1049,7 @@ float ***p;
     p = (float***)malloc(MAX_LEVEL * sizeof(float**));
     for(int i=0; i<MAX_LEVEL; i++)
     {
-	pyramid[i] = (float***)malloc(LAYER * sizeof(float**));
+        pyramid[i] = (float***)malloc(LAYER * sizeof(float**));
 
     }
 
@@ -1056,58 +1062,62 @@ float ***p;
 
     for(int i=0; i<MAX_LEVEL; i++)
     {
-	for(int j=0;j<LAYER-1;j++)
-	{
+        for(int j=0; j<LAYER-1; j++)
+        {
 
-	    sdkResetTimer(&hTimer);
-	    sdkStartTimer(&hTimer);
+            sdkResetTimer(&hTimer);
+            sdkStartTimer(&hTimer);
 
-	    pyramid[i][j+1]=convolutionGPU(pyramid[i][j],channels,width,height);
+            pyramid[i][j+1]=convolutionGPU(pyramid[i][j],channels,width,height);
 
-	    
-	    sdkStopTimer(&hTimer);
-	    excutionTime[3] = 0.001 * sdkGetTimerValue(&hTimer) + excutionTime[3];
 
-	}
+            sdkStopTimer(&hTimer);
+            excutionTime[3] = 0.001 * sdkGetTimerValue(&hTimer) + excutionTime[3];
 
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
+        }
 
-	if(i==0){
-	    scalefactors=SCALE; width2=width/SCALE; height2=height/SCALE;
-	    pyramid[i+1][0]=subsampledimageGPU(pyramid[i][LAYER-1],scalefactors,channels,width,height,width2,height2);
-	}
-	if(i<MAX_LEVEL-2){
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
+
+        if(i==0) {
+            scalefactors=SCALE;
+            width2=width/SCALE;
+            height2=height/SCALE;
+            pyramid[i+1][0]=subsampledimageGPU(pyramid[i][LAYER-1],scalefactors,channels,width,height,width2,height2);
+        }
+        if(i<MAX_LEVEL-2) {
 //	    scalefactors=SCALE*SCALE;
-	    scalefactors=0.000+(int)(SCALE*SCALE+0.5);
-	    width2=width/SCALE; height2=height/SCALE;
-	    width2=width2/SCALE; height2=height2/SCALE;
-	    pyramid[i+2][0]=subsampledimageGPU(pyramid[i][LAYER-1],scalefactors,channels,width,height,width2,height2);
-	}
+            scalefactors=0.000+(int)(SCALE*SCALE+0.5);
+            width2=width/SCALE;
+            height2=height/SCALE;
+            width2=width2/SCALE;
+            height2=height2/SCALE;
+            pyramid[i+2][0]=subsampledimageGPU(pyramid[i][LAYER-1],scalefactors,channels,width,height,width2,height2);
+        }
 
 
-	width=width/SCALE;
-	height=height/SCALE;
+        width=width/SCALE;
+        height=height/SCALE;
 
-	sdkStopTimer(&hTimer);
-	excutionTime[4] = 0.001 * sdkGetTimerValue(&hTimer) + excutionTime[4];
+        sdkStopTimer(&hTimer);
+        excutionTime[4] = 0.001 * sdkGetTimerValue(&hTimer) + excutionTime[4];
 
 
     }
 
-    if(useGPU == 1){
-	printf("Running time for convolution only on GPU is %.5f s.\n\n",excutionTime[7]);
-	printf("Running time for convolution part Memcopy between CPU and GPU is %.5f s.\n\n",excutionTime[8]);
+    if(useGPU == 1) {
+        printf("Running time for convolution only on GPU is %.5f s.\n\n",excutionTime[7]);
+        printf("Running time for convolution part Memcopy between CPU and GPU is %.5f s.\n\n",excutionTime[8]);
     }
     printf("Totally %d times convolution time is %.5f s.\n\n",((MAX_LEVEL-1)*(LAYER-1)),excutionTime[3]);
-    if(useGPU == 1){
-	printf("Running time for subsample only on GPU is %.5f s.\n\n",excutionTime[10]);
-	printf("Running time for subsample part Memcopy between CPU and GPU is %.5f s.\n\n",excutionTime[9]);
+    if(useGPU == 1) {
+        printf("Running time for subsample only on GPU is %.5f s.\n\n",excutionTime[10]);
+        printf("Running time for subsample part Memcopy between CPU and GPU is %.5f s.\n\n",excutionTime[9]);
     }
     printf("Totally %d times subsample time is %.5f s.\n\n",(MAX_LEVEL-1),excutionTime[4]);
 
-    for(int i=0; i<MAX_LEVEL; i++){
-	p[i]=pyramid[i][0];
+    for(int i=0; i<MAX_LEVEL; i++) {
+        p[i]=pyramid[i][0];
     }
 
     sdkDeleteTimer(&hTimer); // valgrind
@@ -1127,8 +1137,8 @@ float *** MatchGPULib::CreateFoveatedPyramid(float ***im, int channels, int heig
     height[0] = heightInit;
     for(int i=0; i<MAX_LEVEL; i++)
     {
-		width[i+1]=width[i]/SCALE;
-		height[i+1]=height[i]/SCALE;
+        width[i+1]=width[i]/SCALE;
+        height[i+1]=height[i]/SCALE;
     }
     rows=width[foveatelevel-1];
     cols=height[foveatelevel-1];
@@ -1137,41 +1147,41 @@ float *** MatchGPULib::CreateFoveatedPyramid(float ***im, int channels, int heig
 
     foveated = (float***)malloc(MAX_LEVEL * sizeof(float**));
 
-    for(level=MAX_LEVEL-1;level>=foveatelevel-1;level--)
+    for(level=MAX_LEVEL-1; level>=foveatelevel-1; level--)
     {
-		foveated[level] = im[level];     
+        foveated[level] = im[level];
 
-/* DEBUG 
-	outImg = cvCreateImage(cvSize(width[level],height[level]), 8, 3);  
-	for(int k=0;k<channels;k++)
-	    for(int l=0;l<outImg->height;l++)
-		for(int m=0;m<outImg->width;m++)
-		{
-		    *(outImg->imageData+l*outImg->widthStep+m*channels+k) = (uchar)*(foveated[level][k]+l*outImg->width+m);
-	 //         printf("%f\n", *(left[i][k]+l*Img->width+m));
-	        }
-	sprintf(string,"Pyrfoveated%d.bmp",level+1);
-	cvSaveImage(string,outImg); 
-*/
-      
-    } 
+        /* DEBUG
+        	outImg = cvCreateImage(cvSize(width[level],height[level]), 8, 3);
+        	for(int k=0;k<channels;k++)
+        	    for(int l=0;l<outImg->height;l++)
+        		for(int m=0;m<outImg->width;m++)
+        		{
+        		    *(outImg->imageData+l*outImg->widthStep+m*channels+k) = (uchar)*(foveated[level][k]+l*outImg->width+m);
+        	 //         printf("%f\n", *(left[i][k]+l*Img->width+m));
+        	        }
+        	sprintf(string,"Pyrfoveated%d.bmp",level+1);
+        	cvSaveImage(string,outImg);
+        */
+
+    }
 
 //cvReleaseImage(&outImg); // valgrind
 
-    for(level=foveatelevel-2;level>=0;level--)
+    for(level=foveatelevel-2; level>=0; level--)
     {
-		x=width[level];
-		y=height[level];
-		l=x/2-x1;
-		u=y/2-y1;
-     //printf("level=%d : x= %d, y = %d, l = %d , u = %d, x1 = %d, y1 = %d,rows = %d, cols = %d\n",level,x,y,l,u,x1,y1,rows,cols); // debugging purpose
-		foveated[level] = (float**)malloc(channels * sizeof(float*));
-		for(int k=0;k<channels;k++){
-			foveated[level][k] = (float*)malloc(rows * cols * sizeof(float));
-			for(int i=0;i<cols;i++){
-				memcpy(&foveated[level][k][i*rows], &im[level][k][(u+i)*x+l], rows * sizeof(float));
-			}
-		}
+        x=width[level];
+        y=height[level];
+        l=x/2-x1;
+        u=y/2-y1;
+        //printf("level=%d : x= %d, y = %d, l = %d , u = %d, x1 = %d, y1 = %d,rows = %d, cols = %d\n",level,x,y,l,u,x1,y1,rows,cols); // debugging purpose
+        foveated[level] = (float**)malloc(channels * sizeof(float*));
+        for(int k=0; k<channels; k++) {
+            foveated[level][k] = (float*)malloc(rows * cols * sizeof(float));
+            for(int i=0; i<cols; i++) {
+                memcpy(&foveated[level][k][i*rows], &im[level][k][(u+i)*x+l], rows * sizeof(float));
+            }
+        }
     }
 
 
@@ -1185,133 +1195,108 @@ float *** MatchGPULib::CreateFoveatedPyramid(float ***im, int channels, int heig
 
 float *** MatchGPULib::matching(float ***iml, float ***imr, int channels, int heightInit, int widthInit)
 {
-/***/
+    /***/
     uint64_t diff,dif;
     struct timespec start, end;
-/***/
+    /***/
 
-        float ***disp, ***dispOut;;
-    int height[MAX_LEVEL-1], width[MAX_LEVEL-1];
-   // float **warpRight, **temp;
-    int i,k,mi;
+    float ***disp, ***dispOut;
+
+    //int height[MAX_LEVEL-1], width[MAX_LEVEL-1];
+    //printf("SO %i\n", sizeof width / sizeof *width);
+
+    std::vector<int> height(MAX_LEVEL);
+    std::vector<int> width(MAX_LEVEL);
+
+//    std::cout << "0. size: " << height.size() << '\n';
+//    std::cout << "1. size: " << width.size() << '\n';
+
+    // float **warpRight, **temp;
+    int mi; //i, k
     float scalefactor, step;
     float *oldDH, *oldDV;
     int height2, width2;
 
-    width[0] = widthInit;
-    height[0] = heightInit;
+    width.at(0) = widthInit;
+    height.at(0) = heightInit;
     scalefactor=1/SCALE;
 
-    for(i=0; i<MAX_LEVEL; i++)
+    for(int i=0; i<MAX_LEVEL-1; i++)
     {
-        width[i+1]=width[i]/SCALE;
-        height[i+1]=height[i]/SCALE;
+        width.at(i+1)=width.at(i)/SCALE;
+        height.at(i+1)=height.at(i)/SCALE;
     }
-    if(foveatedmatching==1){
+
+    if(foveatedmatching==1) {
         width2=width[foveatelevel-2];
         height2=height[foveatelevel-2];
         fovH=height[foveatelevel-1];
-	    fovW=width[foveatelevel-1];
+        fovW=width[foveatelevel-1];
         for(int i=0; i<foveatelevel-1; i++)
         {
             width[i]=width[foveatelevel-1];
             height[i]=height[foveatelevel-1];
         }
     }
+
     disp = (float***)malloc(MAX_LEVEL * sizeof(float**));
-    //    dispOut = (float***)malloc(MAX_LEVEL * sizeof(float**));
-    for(i=0; i<MAX_LEVEL; i++)
+    for(int i=0; i<MAX_LEVEL; i++)
     {
         disp[i] = (float**)malloc(3 * sizeof(float*));
-        //	dispOut[i] = (float**)malloc(channels * sizeof(float*));
-        for(k=0;k<3;k++){
-//            disp[i][k] = (float*)malloc(height[i] * width[i] * sizeof(float));
-	checkCudaErrors( cudaMallocHost((void**)&disp[i][k], height[i] * width[i] * sizeof(float)) ); 
-            //	    dispOut[i][k] = (float*)malloc(height[i] * width[i] * sizeof(float));
+        for(int k=0; k<3; k++) {
+            disp[i][k] = (float*)malloc(height[i] * width[i] * sizeof(float));
+//	        checkCudaErrors( cudaMallocHost((void**)&disp[i][k], height[i] * width[i] * sizeof(float)) );
         }
     }
 
-    for(i=MAX_LEVEL-1; i>=0; i--)
+    for(int i=MAX_LEVEL-1; i>=0; i--)
     {
 //        oldDH = (float*)malloc(height[i] * width[i] * sizeof(float));
 //        oldDV = (float*)malloc(height[i] * width[i] * sizeof(float));
-	checkCudaErrors( cudaMallocHost((void**)&oldDH, height[i] * width[i] * sizeof(float)) ); 
-	checkCudaErrors( cudaMallocHost((void**)&oldDV, height[i] * width[i] * sizeof(float)) ); 
+        checkCudaErrors( cudaMallocHost((void**)&oldDH, height[i] * width[i] * sizeof(float)) );
+        checkCudaErrors( cudaMallocHost((void**)&oldDV, height[i] * width[i] * sizeof(float)) );
 
         printf("level[%d] \n",i+1);
         int mi=(i>5)?levelcutoff:((i+1)*2);//(i+1);
         step=1.0;
 //        for(int j=1;j<=mi;j++){
 
-        for(int j=1;j<=1;j++){
-clock_gettime(CLOCK_MONOTONIC, &start); /* mark start time */
+        for(int j=1; j<=1; j++) {
+            clock_gettime(CLOCK_MONOTONIC, &start); /* mark start time */
             disp[i] = matchlevel(iml[i],imr[i],disp[i],channels,width[i],height[i],MAX_LEVEL-1-i, j, step);
-clock_gettime(CLOCK_MONOTONIC, &end); /* mark the end time */
-dif = BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
-cout << "Matching level "<< i << " took "<< dif/1.0e6 << " ms"<< endl;
-/*            if(j%2==1){
-//                memcpy(oldDH,disp[i][0],height[i] * width[i] * sizeof(float));
-//                memcpy(oldDV,disp[i][1],height[i] * width[i] * sizeof(float));
-            }
-            else{
-                if((mi/2-j/2)<7){ step=((mi/2-j/2)-1)*((1-0.1)/(mi/2-1.0))+0.1; }
-                else{step=1.0;}//printf("step=%f\n",step);
-
-///////////////////MATLAB CODE///////////////////////
-/*
-    step_initial=1.0;
-    step_finish=0.1;
-    cut_iteration=7;
-    
-    if(numIterations==1)
-        ss=step_initial;
-        return;
-    elseif ((numIterations-currentIteration) < cut_iteration)
-        ss=(numIterations-currentIteration-1)*((step_initial-step_finish)/(numIterations-1.0)) + step_finish;
-        return;
-    end
-    ss=step_initial;
-*/
-/////////////////MATLAB CODE END//////////////////////
-
- /*               if (differenceIterations(disp[i][0],disp[i][1],disp[i][2],oldDH,oldDV,0.1*0.1,width[i],height[i])==0){
-                    printf("STOPPED level: %i after %i cycles !!!\n",i,j);
-                    break;
-                }
-*/
-//            }
-
-//            disp[i] = convolutionGPUTa(disp[i], 3, width[i],height[i]);
-
+            clock_gettime(CLOCK_MONOTONIC, &end); /* mark the end time */
+            dif = BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
+            cout << "Matching level "<< i << " took "<< dif/1.0e6 << " ms"<< endl;
         }
-	
-////cudaMemGetInfo(&freeMem, &totalMem);
-//printf("Free Memory:%luMB = %luKB,\tTotal Memory:%luMB = %luKB\n",freeMem/1024/1024,freeMem/1024,totalMem/1024/1024,totalMem/1024);
 
-        if(i>0){
-            if(foveatedmatching==0){
+        cudaMemGetInfo(&freeMem, &totalMem);
+        printf("Free Memory:%luMB = %luKB,\tTotal Memory:%luMB = %luKB\n",freeMem/1024/1024,freeMem/1024,totalMem/1024/1024,totalMem/1024);
 
- clock_gettime(CLOCK_MONOTONIC, &start); /* mark start time */
+        if(i>0) {
+            if(foveatedmatching==0) {
+
+                clock_gettime(CLOCK_MONOTONIC, &start); /* mark start time */
                 disp[i-1]=subsampleDisp(disp[i], scalefactor, 3, width[i], height[i], width[i-1], height[i-1]);
- clock_gettime(CLOCK_MONOTONIC, &end); /* mark the end time */
+                clock_gettime(CLOCK_MONOTONIC, &end); /* mark the end time */
             }
-            else{
-                if(i>=foveatelevel){
- clock_gettime(CLOCK_MONOTONIC, &start); /* mark start time */
-               disp[i-1]=subsampleDisp(disp[i], scalefactor, 3, width[i], height[i], width[i-1], height[i-1]);
-clock_gettime(CLOCK_MONOTONIC, &end); /* mark the end time */
-                 }
-                else{
- clock_gettime(CLOCK_MONOTONIC, &start); /* mark start time */
-               disp[i-1]=foveatedsubsampleDisp(disp[i], scalefactor, 3, width[i], height[i], width2, height2);
-clock_gettime(CLOCK_MONOTONIC, &end); /* mark the end time */
+            else {
+                if(i>=foveatelevel) {
+                    clock_gettime(CLOCK_MONOTONIC, &start); /* mark start time */
+                    disp[i-1]=subsampleDisp(disp[i], scalefactor, 3, width[i], height[i], width[i-1], height[i-1]);
+                    clock_gettime(CLOCK_MONOTONIC, &end); /* mark the end time */
+                }
+                else {
+                    clock_gettime(CLOCK_MONOTONIC, &start); /* mark start time */
+                    disp[i-1]=foveatedsubsampleDisp(disp[i], scalefactor, 3, width[i], height[i], width2, height2);
+                    clock_gettime(CLOCK_MONOTONIC, &end); /* mark the end time */
 
-                  }
+                }
             }
-diff = BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
-cout << "Subsampling level "<< i << " took "<< diff/1.0e6 << " ms"<< endl;
-cout << "Matching level "<< i << " in total took "<< (diff+dif)/1.0e6 << " ms"<< endl;
+            diff = BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
+            cout << "Subsampling level "<< i << " took "<< diff/1.0e6 << " ms"<< endl;
+            cout << "Matching level "<< i << " in total took "<< (diff+dif)/1.0e6 << " ms"<< endl;
         }
+
 ////cudaMemGetInfo(&freeMem, &totalMem);
 //printf("Free Memory:%luMB = %luKB,\tTotal Memory:%luMB = %luKB\n",freeMem/1024/1024,freeMem/1024,totalMem/1024/1024,totalMem/1024);
         //	dispOut[i] = warpRightImage(imr[i],disp[i],channels,width[i],height[i]);
@@ -1321,11 +1306,15 @@ cout << "Matching level "<< i << " in total took "<< (diff+dif)/1.0e6 << " ms"<<
 
 //        free(oldDH);
 //        free(oldDV);
-    cudaFreeHost(oldDH);
-    cudaFreeHost(oldDV);
+        cudaFreeHost(oldDH);
+        cudaFreeHost(oldDV);
+        printf(">>>>>>>>>>>>>>>>>>>> %d\n",i);
     }
 
+    //printf(">>>>>>>>>>>>>>>>>>>> %d\n",i);
     return disp;
+
+
 }
 
 
@@ -1337,8 +1326,9 @@ int MatchGPULib::differenceIterations(float*DH,float*DV,float*conf,float*OldDH,f
     float Dif1, Dif2;
     Dif1 = weightedDifference(DH,OldDH,conf,imageW,imageH);
     Dif2 = weightedDifference(DV,OldDV,conf,imageW,imageH);
-    if ((Dif1<threshold) && (Dif2<threshold)){
-        isDif = 0;}
+    if ((Dif1<threshold) && (Dif2<threshold)) {
+        isDif = 0;
+    }
 
     return isDif;
 }
@@ -1369,32 +1359,32 @@ float MatchGPULib::weightedDifference(float*D,float*OldD,float*conf, int imageW,
     checkCudaErrors(cudaDeviceSynchronize());
 
     weightedDifferenceGPU(
-	    d_temp,
-	    d_D,
-	    d_OldD,
-	    d_conf,
-	    imageW,
-	    imageH
-        );
+        d_temp,
+        d_D,
+        d_OldD,
+        d_conf,
+        imageW,
+        imageH
+    );
 
 
     reduceGPU(
-	    d_odata,
-	    d_temp,
-	    numBlocks,
-	    threads,
-	    imageW * imageH
-        );
+        d_odata,
+        d_temp,
+        numBlocks,
+        threads,
+        imageW * imageH
+    );
 
     checkCudaErrors(cudaMemcpy(d_temp, d_odata, numBlocks * sizeof(float), cudaMemcpyDeviceToDevice));
 
     reduceGPU(
-	    d_odata,
-	    d_conf,
-	    numBlocks,
-	    threads,
-	    imageW * imageH
-        );
+        d_odata,
+        d_conf,
+        numBlocks,
+        threads,
+        imageW * imageH
+    );
 
     checkCudaErrors(cudaMemcpy(d_conf, d_odata, numBlocks * sizeof(float), cudaMemcpyDeviceToDevice));
 
@@ -1402,36 +1392,36 @@ float MatchGPULib::weightedDifference(float*D,float*OldD,float*conf, int imageW,
     numBlocks = (numBlocks2 + (threads * 2 - 1)) / (threads * 2);
 
     reduceGPU(
-	    d_odata,
-	    d_temp,
-	    numBlocks,
-	    threads,
-	    numBlocks2
-        );
+        d_odata,
+        d_temp,
+        numBlocks,
+        threads,
+        numBlocks2
+    );
     checkCudaErrors(cudaMemcpy(weightedDif, d_odata, numBlocks * sizeof(float), cudaMemcpyDeviceToHost));
 
     reduceGPU(
-	    d_odata,
-	    d_conf,
-	    numBlocks,
-	    threads,
-	    numBlocks2
-        );
+        d_odata,
+        d_conf,
+        numBlocks,
+        threads,
+        numBlocks2
+    );
     checkCudaErrors(cudaMemcpy(conf, d_odata, numBlocks * sizeof(float), cudaMemcpyDeviceToHost));
 
 //printf("numBlocks2 = %d\n",numBlocks2);
 //printf("numBlocks = %d\n",numBlocks);
 
-    for(int i=0;i<numBlocks;i++){
-	sumPix = sumPix + weightedDif[i];
-	theDif = theDif + conf[i];
+    for(int i=0; i<numBlocks; i++) {
+        sumPix = sumPix + weightedDif[i];
+        theDif = theDif + conf[i];
     }
 
 
-/*    for(int i=0;i<imageH*imageW;i++){
-	sumPix = sumPix + weightedDif[i];
-	theDif = theDif + conf[i];
-    }*/
+    /*    for(int i=0;i<imageH*imageW;i++){
+    	sumPix = sumPix + weightedDif[i];
+    	theDif = theDif + conf[i];
+        }*/
 
     theDif = sumPix/theDif;
 //printf("The Difference = %f\n",theDif);
@@ -1467,8 +1457,8 @@ float ** MatchGPULib::warpRightImage(float **right, float **disparity, int chann
     cudaChannelFormatDesc floatTex = cudaCreateChannelDesc<float>();
 
     outim = (float**)malloc(channels * sizeof(float*));
-    for(int i=0; i<channels; i++){
-	outim[i] = (float*)malloc(imageW * imageH * sizeof(float));
+    for(int i=0; i<channels; i++) {
+        outim[i] = (float*)malloc(imageW * imageH * sizeof(float));
     }
 
     checkCudaErrors(cudaMalloc((void **)&d_Output,  imageW * imageH * sizeof(float)));
@@ -1480,41 +1470,41 @@ float ** MatchGPULib::warpRightImage(float **right, float **disparity, int chann
     checkCudaErrors(cudaMemcpyToArray(dispy, 0, 0, disparity[1], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
 
 
-   for(int j=0; j<channels; j++){
+    for(int j=0; j<channels; j++) {
 
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
-	checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, right[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[11] = gpuTime + excutionTime[11];
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
+        checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, right[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[11] = gpuTime + excutionTime[11];
 
-	checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaDeviceSynchronize());
 
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
 
-	warp(
-	    d_Output,
-	    a_Src,
-	    dispx,
-	    dispy,
-	    imageW,
-	    imageH
+        warp(
+            d_Output,
+            a_Src,
+            dispx,
+            dispy,
+            imageW,
+            imageH
         );
 
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[12] = gpuTime + excutionTime[12];
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[12] = gpuTime + excutionTime[12];
 
-	checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaDeviceSynchronize());
 
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
-	checkCudaErrors(cudaMemcpy(outim[j], d_Output, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[11] = gpuTime + excutionTime[11];
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
+        checkCudaErrors(cudaMemcpy(outim[j], d_Output, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[11] = gpuTime + excutionTime[11];
     }
 
     cudaFreeArray(a_Src);
@@ -1523,7 +1513,7 @@ float ** MatchGPULib::warpRightImage(float **right, float **disparity, int chann
     cudaFree(temp);
     cudaFree(d_Output);
 
-sdkDeleteTimer(&hTimer); // valgrind
+    sdkDeleteTimer(&hTimer); // valgrind
     return outim;
 }
 
@@ -1548,54 +1538,54 @@ float ** MatchGPULib::subsampleDisp(float**im, float scalefactor, int channels, 
     cudaChannelFormatDesc floatTex = cudaCreateChannelDesc<float>();
 
     outim = (float**)malloc(channels * sizeof(float*));
-    for(int i=0; i<channels; i++){
-	outim[i] = (float*)malloc(imageW2 * imageH2 * sizeof(float));
+    for(int i=0; i<channels; i++) {
+        outim[i] = (float*)malloc(imageW2 * imageH2 * sizeof(float));
     }
 
     checkCudaErrors(cudaMalloc((void **)&d_Output,  imageW2 * imageH2 * sizeof(float)));
     checkCudaErrors(cudaMallocArray(&a_Src, &floatTex, imageW, imageH));
 
 
-   for(int j=0; j<channels; j++){
+    for(int j=0; j<channels; j++) {
 
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
-	checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, im[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[9] = gpuTime + excutionTime[9];
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
+        checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, im[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[9] = gpuTime + excutionTime[9];
 
-	checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaDeviceSynchronize());
 
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
-	subsampleDispGPU(
-	    d_Output,
-	    a_Src,
-	    imageW,
-	    imageH,
-	    scalefactor,
-	    imageW2,
-	    imageH2
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
+        subsampleDispGPU(
+            d_Output,
+            a_Src,
+            imageW,
+            imageH,
+            scalefactor,
+            imageW2,
+            imageH2
         );
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[10] = gpuTime + excutionTime[10];
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[10] = gpuTime + excutionTime[10];
 
-	checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaDeviceSynchronize());
 
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
-	checkCudaErrors(cudaMemcpy(outim[j], d_Output, imageW2 * imageH2 * sizeof(float), cudaMemcpyDeviceToHost));
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[9] = gpuTime + excutionTime[9];
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
+        checkCudaErrors(cudaMemcpy(outim[j], d_Output, imageW2 * imageH2 * sizeof(float), cudaMemcpyDeviceToHost));
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[9] = gpuTime + excutionTime[9];
     }
 
     cudaFreeArray(a_Src);
     cudaFree(d_Output);
 
-sdkDeleteTimer(&hTimer); // valgrind
+    sdkDeleteTimer(&hTimer); // valgrind
     return outim;
 }
 
@@ -1615,49 +1605,49 @@ float ** MatchGPULib::foveatedsubsampleDisp(float**im, float scalefactor, int ch
 
     outim = (float**)malloc(channels * sizeof(float*));
     temp = (float**)malloc(channels * sizeof(float*));
-    for(int i=0; i<channels; i++){
-	outim[i] = (float*)malloc(imageW * imageH * sizeof(float));
-	temp[i] = (float*)malloc(imageW2 * imageH2 * sizeof(float));
+    for(int i=0; i<channels; i++) {
+        outim[i] = (float*)malloc(imageW * imageH * sizeof(float));
+        temp[i] = (float*)malloc(imageW2 * imageH2 * sizeof(float));
     }
     x1=imageW/2;
     y1=imageH/2;
-	l=imageW2/2-x1;
-	u=imageH2/2-y1;
+    l=imageW2/2-x1;
+    u=imageH2/2-y1;
 
     checkCudaErrors(cudaMalloc((void **)&d_Output,  imageW2 * imageH2 * sizeof(float)));
     checkCudaErrors(cudaMallocArray(&a_Src, &floatTex, imageW, imageH));
 
 
-   for(int j=0; j<channels; j++){
+    for(int j=0; j<channels; j++) {
 
-	checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, im[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+        checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, im[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
 
 
-	checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaDeviceSynchronize());
 
-	subsampleDispGPU(
-	    d_Output,
-	    a_Src,
-	    imageW,
-	    imageH,
-	    scalefactor,
-	    imageW2,
-	    imageH2
+        subsampleDispGPU(
+            d_Output,
+            a_Src,
+            imageW,
+            imageH,
+            scalefactor,
+            imageW2,
+            imageH2
         );
 
 
-	checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaDeviceSynchronize());
 
-	checkCudaErrors(cudaMemcpy(temp[j], d_Output, imageW2 * imageH2 * sizeof(float), cudaMemcpyDeviceToHost));
-	for(int i=0;i<imageH;i++){
-	    memcpy(&outim[j][i*imageW], &temp[j][(u+i)*imageW2+l], imageW * sizeof(float));
-	}
+        checkCudaErrors(cudaMemcpy(temp[j], d_Output, imageW2 * imageH2 * sizeof(float), cudaMemcpyDeviceToHost));
+        for(int i=0; i<imageH; i++) {
+            memcpy(&outim[j][i*imageW], &temp[j][(u+i)*imageW2+l], imageW * sizeof(float));
+        }
     }
 
-for (int j=0; j<channels; j++) {
-    free(temp[j]);
-}
-free(temp);
+    for (int j=0; j<channels; j++) {
+        free(temp[j]);
+    }
+    free(temp);
     cudaFreeArray(a_Src);
     cudaFree(d_Output);
 
@@ -1684,8 +1674,8 @@ float ** MatchGPULib::matchlevel(float **left, float **right, float **disparity,
     thresholdx=threshold;
     thresholdy=threshold;
 
-    Point move[5]={{0.0-thresholdx,0.0},{thresholdx,0.0},{0.0,0.0-thresholdy},{0.0,thresholdy},{0.0,0.0}};
-    
+    Point move[5]= {{0.0-thresholdx,0.0},{thresholdx,0.0},{0.0,0.0-thresholdy},{0.0,thresholdy},{0.0,0.0}};
+
     StopWatchInterface *hTimer = NULL;
     sdkCreateTimer(&hTimer);
 
@@ -1709,324 +1699,286 @@ float ** MatchGPULib::matchlevel(float **left, float **right, float **disparity,
     checkCudaErrors(cudaMallocArray(&texturer, &floatTex, imageW, imageH));
     checkCudaErrors(cudaMallocArray(&texturelr, &floatTex, imageW, imageH));
 
-if(usingMoreGPUMemory==1){
-    checkCudaErrors(cudaMalloc((void **)&directionl,  imageW * imageH * sizeof(float)));
-    checkCudaErrors(cudaMalloc((void **)&directionr,  imageW * imageH * sizeof(float)));
-    checkCudaErrors(cudaMalloc((void **)&directionu,  imageW * imageH * sizeof(float)));
-    checkCudaErrors(cudaMalloc((void **)&directiond,  imageW * imageH * sizeof(float)));
-    checkCudaErrors(cudaMalloc((void **)&directionc,  imageW * imageH * sizeof(float)));
-    checkCudaErrors(cudaMallocArray(&temp2, &floatTex, imageW, imageH));
+    if(usingMoreGPUMemory==1) {
+        checkCudaErrors(cudaMalloc((void **)&directionl,  imageW * imageH * sizeof(float)));
+        checkCudaErrors(cudaMalloc((void **)&directionr,  imageW * imageH * sizeof(float)));
+        checkCudaErrors(cudaMalloc((void **)&directionu,  imageW * imageH * sizeof(float)));
+        checkCudaErrors(cudaMalloc((void **)&directiond,  imageW * imageH * sizeof(float)));
+        checkCudaErrors(cudaMalloc((void **)&directionc,  imageW * imageH * sizeof(float)));
+        checkCudaErrors(cudaMallocArray(&temp2, &floatTex, imageW, imageH));
 
-    checkCudaErrors(cudaMalloc((void **)&disp0,  imageW * imageH * sizeof(float)));
-    checkCudaErrors(cudaMalloc((void **)&disp1,  imageW * imageH * sizeof(float)));
-    checkCudaErrors(cudaMalloc((void **)&disp2,  imageW * imageH * sizeof(float)));
-    checkCudaErrors(cudaMalloc((void **)&imleft2,  imageW * imageH * sizeof(float)));
-    checkCudaErrors(cudaMalloc((void **)&imright2,  imageW * imageH * sizeof(float)));
-    checkCudaErrors(cudaMallocArray(&imleft, &floatTex, imageW, imageH));
-    checkCudaErrors(cudaMallocArray(&imright, &floatTex, imageW, imageH));
-}
-else{
-    direction = (float***)malloc(5 * sizeof(float**));
-    for(int i=0; i<5; i++){
-        direction[i] = (float**)malloc(channels * sizeof(float*));
-        for(int j=0; j<channels; j++){
+        checkCudaErrors(cudaMalloc((void **)&disp0,  imageW * imageH * sizeof(float)));
+        checkCudaErrors(cudaMalloc((void **)&disp1,  imageW * imageH * sizeof(float)));
+        checkCudaErrors(cudaMalloc((void **)&disp2,  imageW * imageH * sizeof(float)));
+        checkCudaErrors(cudaMalloc((void **)&imleft2,  imageW * imageH * sizeof(float)));
+        checkCudaErrors(cudaMalloc((void **)&imright2,  imageW * imageH * sizeof(float)));
+        checkCudaErrors(cudaMallocArray(&imleft, &floatTex, imageW, imageH));
+        checkCudaErrors(cudaMallocArray(&imright, &floatTex, imageW, imageH));
+    }
+    else {
+        direction = (float***)malloc(5 * sizeof(float**));
+        for(int i=0; i<5; i++) {
+            direction[i] = (float**)malloc(channels * sizeof(float*));
+            for(int j=0; j<channels; j++) {
 //            direction[i][j] = (float*)malloc(imageW * imageH * sizeof(float));
-	checkCudaErrors( cudaMallocHost((void**)&direction[i][j], imageW * imageH * sizeof(float)) ); 
+                checkCudaErrors( cudaMallocHost((void**)&direction[i][j], imageW * imageH * sizeof(float)) );
+            }
         }
     }
-}
 
 //    checkCudaErrors(cudaMallocArray(&dispy, &floatTex, imageW, imageH));
 ////cudaMemGetInfo(&freeMem, &totalMem);
 //printf("Free Memory:%luMB = %luKB,\tTotal Memory:%luMB = %luKB\n",freeMem/1024/1024,freeMem/1024,totalMem/1024/1024,totalMem/1024);
 
-/*
-*h_Kernel=0.090354;
-*(h_Kernel+1)=0.241821;
-*(h_Kernel+2)=0.335650;
-*(h_Kernel+3)=0.241821;
-*(h_Kernel+4)=0.090354;
-*/
+    /*
+    *h_Kernel=0.090354;
+    *(h_Kernel+1)=0.241821;
+    *(h_Kernel+2)=0.335650;
+    *(h_Kernel+3)=0.241821;
+    *(h_Kernel+4)=0.090354;
+    */
 //int mi=(level<15)?1:1;//(MAX_LEVEL-level);
-int mi=((13-level)>5)?levelcutoff:((13-level+1)*2);
+    int mi=((13-level)>5)?levelcutoff:((13-level+1)*2);
 //printf("level=%d\tmi=%d\n",level,mi);
-for(int m=1; m<=mi; m ++){
+    for(int m=1; m<=mi; m ++) {
 
-   for(int j=0; j<channels; j++){
+        for(int j=0; j<channels; j++) {
 
 
-if(usingMoreGPUMemory==1){
-    
-    sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
-    
-	checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, right[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-	checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, left[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+            if(usingMoreGPUMemory==1) {
 
-    sdkStopTimer(&hTimer);
-    gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-    excutionTime[13] = gpuTime + excutionTime[13];
-    
-	if(m==1){
+                sdkResetTimer(&hTimer);
+                sdkStartTimer(&hTimer);
+
+                checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, right[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+                checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, left[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+
+                sdkStopTimer(&hTimer);
+                gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+                excutionTime[13] = gpuTime + excutionTime[13];
+
+                if(m==1) {
 //	checkCudaErrors(cudaMemcpyToArray(imright, 0, 0, right[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
 //	checkCudaErrors(cudaMemcpyToArray(imleft, 0, 0, left[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
 
-    checkCudaErrors(cudaMemcpy(disp0, disparity[0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-    checkCudaErrors(cudaMemcpy(disp1, disparity[1], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+                    checkCudaErrors(cudaMemcpy(disp0, disparity[0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+                    checkCudaErrors(cudaMemcpy(disp1, disparity[1], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
 //	checkCudaErrors(cudaMemcpy(imright2, right[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
 //	checkCudaErrors(cudaMemcpy(imleft2, left[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-	checkCudaErrors(cudaDeviceSynchronize());
-	}
+                    checkCudaErrors(cudaDeviceSynchronize());
+                }
 //	else{
-    checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, disp0, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, disp1, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+                checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, disp0, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+                checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, disp1, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
 //compare=imright;
 //a_Src=imleft;
 //	checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, imright2, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
 //	checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, imleft2, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-	checkCudaErrors(cudaDeviceSynchronize());
+                checkCudaErrors(cudaDeviceSynchronize());
 //	}
 
-}
-else{
-    checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, disparity[0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-    checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, disparity[1], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-	checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, right[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-	checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, left[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+            }
+            else {
+                checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, disparity[0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+                checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, disparity[1], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+                checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, right[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+                checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, left[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
 
 
-	checkCudaErrors(cudaDeviceSynchronize());
-}
-
-       
-	warp(
-	    c,
-	    compare,
-	    texturel,
-	    texturer,
-	    imageW,
-	    imageH
-        );
+                checkCudaErrors(cudaDeviceSynchronize());
+            }
 
 
-	checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            warp(
+                c,
+                compare,
+                texturel,
+                texturer,
+                imageW,
+                imageH
+            );
 
-	checkCudaErrors(cudaDeviceSynchronize());
+
+            checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+
+            checkCudaErrors(cudaDeviceSynchronize());
 
 //	sdkResetTimer(&hTimer);
 //	sdkStartTimer(&hTimer);
 
-	compareSquareIm(
-	    u,
-	    a_Src,
-	    imageW,
-	    imageH
-        );
+            compareSquareIm(
+                u,
+                a_Src,
+                imageW,
+                imageH
+            );
 
-	compareSquareIm(
-	    d,
-	    compare,
-	    imageW,
-	    imageH
-        );
-
-
-	checkCudaErrors(cudaDeviceSynchronize());
-/*
-       convolutionRowsGPU(
-                          l,
-                          u,
-                          imageW,
-                          imageH
-                          );
-       checkCudaErrors(cudaDeviceSynchronize());
-       
-       convolutionColumnsGPU(
-                             u,
-                             l,
-                             imageW,
-                             imageH
-                             );
-       
-       checkCudaErrors(cudaDeviceSynchronize());
-       
-       convolutionRowsGPU(
-                          r,
-                          d,
-                          imageW,
-                          imageH
-                          );
-       checkCudaErrors(cudaDeviceSynchronize());
-       
-       convolutionColumnsGPU(
-                             d,
-                             r,
-                             imageW,
-                             imageH
-                             );
-       
-       checkCudaErrors(cudaDeviceSynchronize());
-*/
+            compareSquareIm(
+                d,
+                compare,
+                imageW,
+                imageH
+            );
 
 
+            checkCudaErrors(cudaDeviceSynchronize());
+            /*
+                   convolutionRowsGPU(
+                                      l,
+                                      u,
+                                      imageW,
+                                      imageH
+                                      );
+                   checkCudaErrors(cudaDeviceSynchronize());
 
-    checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaDeviceSynchronize());
+                   convolutionColumnsGPU(
+                                         u,
+                                         l,
+                                         imageW,
+                                         imageH
+                                         );
 
-        convolutionRowsGPUT(
-            l,
-            texturel,
-            imageW,
-            imageH
-        );
-    checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaDeviceSynchronize());
+                   checkCudaErrors(cudaDeviceSynchronize());
 
-        convolutionColumnsGPUT(
-            u,
-            texturelr,
-            imageW,
-            imageH
-        );
+                   convolutionRowsGPU(
+                                      r,
+                                      d,
+                                      imageW,
+                                      imageH
+                                      );
+                   checkCudaErrors(cudaDeviceSynchronize());
+
+                   convolutionColumnsGPU(
+                                         d,
+                                         r,
+                                         imageW,
+                                         imageH
+                                         );
+
+                   checkCudaErrors(cudaDeviceSynchronize());
+            */
 
 
-    checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, d, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaDeviceSynchronize());
 
-        convolutionRowsGPUT(
-            r,
-            texturel,
-            imageW,
-            imageH
-        );
-    checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, r, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaDeviceSynchronize());
+            checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaDeviceSynchronize());
 
-        convolutionColumnsGPUT(
-            d,
-            texturelr,
-            imageW,
-            imageH
-        );
-    checkCudaErrors(cudaDeviceSynchronize());
+            convolutionRowsGPUT(
+                l,
+                texturel,
+                imageW,
+                imageH
+            );
+            checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaDeviceSynchronize());
 
-       checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-       checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, d, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            convolutionColumnsGPUT(
+                u,
+                texturelr,
+                imageW,
+                imageH
+            );
+
+
+            checkCudaErrors(cudaDeviceSynchronize());
+            checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, d, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaDeviceSynchronize());
+
+            convolutionRowsGPUT(
+                r,
+                texturel,
+                imageW,
+                imageH
+            );
+            checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, r, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaDeviceSynchronize());
+
+            convolutionColumnsGPUT(
+                d,
+                texturelr,
+                imageW,
+                imageH
+            );
+            checkCudaErrors(cudaDeviceSynchronize());
+
+            checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, d, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
 
 //////////////////////////////////////
 
-       
-       for (int i=0; i<5;i++){
-           thresholdx=move[i].x;
-           thresholdy=move[i].y;
+
+            for (int i=0; i<5; i++) {
+                thresholdx=move[i].x;
+                thresholdy=move[i].y;
 //              printf("thresholdx=%f\tthresholdy=%f\n",move[i].x,move[i].y);
 //            printf("thresholdx=%f\tthresholdy=%f\n",thresholdx,thresholdy);
 
-           
-       compareImMove(
-                     c,
-                     a_Src,
-                     compare,
-                     imageW,
-                     imageH,
-                     thresholdx,
-                     thresholdy
-                     );
-       
-       checkCudaErrors(cudaDeviceSynchronize());
 
-           sdkResetTimer(&hTimer);
-           sdkStartTimer(&hTimer);
-           
-           convolutionRowsGPU(
-                              l,
-                              c,
-                              imageW,
-                              imageH
-                              );
-           checkCudaErrors(cudaDeviceSynchronize());
-           
-           convolutionColumnsGPU(
-                                 c,
-                                 l,
-                                 imageW,
-                                 imageH
-                                 );
-           //printf("CudaErrors test 1\n");
-           checkCudaErrors(cudaDeviceSynchronize());
+                compareImMove(
+                    c,
+                    a_Src,
+                    compare,
+                    imageW,
+                    imageH,
+                    thresholdx,
+                    thresholdy
+                );
 
-       
-/*       checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-       checkCudaErrors(cudaDeviceSynchronize());
-       
-       convolutionRowsGPUT(
-                           l,
-                           texturelr,
-                           imageW,
-                           imageH
-                           );
-       checkCudaErrors(cudaDeviceSynchronize());
-       checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-       checkCudaErrors(cudaDeviceSynchronize());
-       
-       convolutionColumnsGPUT(
-                              c,
-                              texturelr,
-                              imageW,
-                              imageH
-                              );
-           
-       checkCudaErrors(cudaDeviceSynchronize());
- */
-       checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+                checkCudaErrors(cudaDeviceSynchronize());
+
+                sdkResetTimer(&hTimer);
+                sdkStartTimer(&hTimer);
+
+                convolutionRowsGPU(
+                    l,
+                    c,
+                    imageW,
+                    imageH
+                );
+                checkCudaErrors(cudaDeviceSynchronize());
+
+                convolutionColumnsGPU(
+                    c,
+                    l,
+                    imageW,
+                    imageH
+                );
+                //printf("CudaErrors test 1\n");
+                checkCudaErrors(cudaDeviceSynchronize());
+
+
+                /*       checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+                       checkCudaErrors(cudaDeviceSynchronize());
+
+                       convolutionRowsGPUT(
+                                           l,
+                                           texturelr,
+                                           imageW,
+                                           imageH
+                                           );
+                       checkCudaErrors(cudaDeviceSynchronize());
+                       checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+                       checkCudaErrors(cudaDeviceSynchronize());
+
+                       convolutionColumnsGPUT(
+                                              c,
+                                              texturelr,
+                                              imageW,
+                                              imageH
+                                              );
+
+                       checkCudaErrors(cudaDeviceSynchronize());
+                 */
+                checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
 //       printf("threshold=%f\n",threshold);
 
-           sdkStopTimer(&hTimer);
-           gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-           excutionTime[14] = gpuTime + excutionTime[14];
-           
-if(usingMoreGPUMemory==0){
-	
-       calculateImMoveCorr(
-                           l,
-                           texturel,
-                           texturer,
-                           texturelr,
-                           imageW,
-                           imageH,
-                           thresholdx,
-                           thresholdy
-                           );
-       
-       checkCudaErrors(cudaDeviceSynchronize());
-}
-           
-           
+                sdkStopTimer(&hTimer);
+                gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+                excutionTime[14] = gpuTime + excutionTime[14];
 
-        
-           
-if(usingMoreGPUMemory==1){
-switch( i ) 
-{
-    case 0 :
-        temp = directionl;
-        break;
-    case 1 :
-        temp = directionr;
-        break;
-    case 2 :
-        temp = directionu;
-        break;
-    case 3 :
-        temp = directiond;
-        break;
-    case 4 :
-        temp = directionc;
-        break;
-}
-    if(j!=0){
-    calculateImMoveCorr(
+                if(usingMoreGPUMemory==0) {
+
+                    calculateImMoveCorr(
                         l,
                         texturel,
                         texturer,
@@ -2035,348 +1987,378 @@ switch( i )
                         imageH,
                         thresholdx,
                         thresholdy
+                    );
+
+                    checkCudaErrors(cudaDeviceSynchronize());
+                }
+
+
+
+
+
+                if(usingMoreGPUMemory==1) {
+                    switch( i )
+                    {
+                    case 0 :
+                        temp = directionl;
+                        break;
+                    case 1 :
+                        temp = directionr;
+                        break;
+                    case 2 :
+                        temp = directionu;
+                        break;
+                    case 3 :
+                        temp = directiond;
+                        break;
+                    case 4 :
+                        temp = directionc;
+                        break;
+                    }
+                    if(j!=0) {
+                        calculateImMoveCorr(
+                            l,
+                            texturel,
+                            texturer,
+                            texturelr,
+                            imageW,
+                            imageH,
+                            thresholdx,
+                            thresholdy
                         );
-    
-    checkCudaErrors(cudaDeviceSynchronize());
-    }
-    
-if(j==0){ //checkCudaErrors(cudaMemcpy(temp, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    calculateImMoveCorr(
-                        temp,
+
+                        checkCudaErrors(cudaDeviceSynchronize());
+                    }
+
+                    if(j==0) { //checkCudaErrors(cudaMemcpy(temp, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+                        calculateImMoveCorr(
+                            temp,
+                            texturel,
+                            texturer,
+                            texturelr,
+                            imageW,
+                            imageH,
+                            thresholdx,
+                            thresholdy
+                        );
+
+                        checkCudaErrors(cudaDeviceSynchronize());
+
+                    }
+                    else if(j==1) {
+                        checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, temp, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+                        checkCudaErrors(cudaMemcpyToArray(temp2, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+                        calculateTrueDisparity(
+                            temp,
+                            texturelr,
+                            temp2,
+                            imageW,
+                            imageH
+                        );
+                    }
+                    else if(j==2) {
+                        checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, temp, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+                        checkCudaErrors(cudaMemcpyToArray(temp2, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+                        floatrescale(
+                            temp,
+                            texturelr,
+                            temp2,
+                            3,
+                            imageW,
+                            imageH
+                        );
+                    }
+                }
+
+
+                else {
+                    checkCudaErrors(cudaMemcpy(direction[i][j], l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
+                }
+
+
+            }
+
+
+            checkCudaErrors(cudaDeviceSynchronize());
+
+        }
+
+        if(usingMoreGPUMemory==1) {
+            checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, directionl, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, directionr, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, directionu, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, directiond, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, directionc, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+        }
+        else {
+            if(channels==3) {
+                for(int i=0; i<5; i++) {
+                    checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, direction[i][0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+                    checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, direction[i][1], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+                    checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, direction[i][2], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+
+                    calculateMeanCorr(
+                        c,
                         texturel,
                         texturer,
                         texturelr,
                         imageW,
-                        imageH,
-                        thresholdx,
-                        thresholdy
-                        );
-    
-    checkCudaErrors(cudaDeviceSynchronize());
+                        imageH
+                    );
 
-}
-else if(j==1){
-	checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, temp, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-	checkCudaErrors(cudaMemcpyToArray(temp2, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-	calculateTrueDisparity(
-	    temp,
-	    texturelr,
-	    temp2,
-	    imageW,
-	    imageH
-        );
-}
-else if(j==2){
-	checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, temp, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-	checkCudaErrors(cudaMemcpyToArray(temp2, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-	floatrescale(
-	    temp,
-	    texturelr,
-	    temp2,
-        3,
-	    imageW,
-	    imageH
-        );
-}
-}
-
-           
-else{
-       checkCudaErrors(cudaMemcpy(direction[i][j], l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
-}
-
-
-       }
-    
-
-	checkCudaErrors(cudaDeviceSynchronize());
-
-    }
-
-if(usingMoreGPUMemory==1){
-    checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, directionl, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, directionr, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, directionu, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, directiond, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, directionc, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-}
-else{
-if(channels==3){
-    for(int i=0; i<5; i++){
-	checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, direction[i][0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-	checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, direction[i][1], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-	checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, direction[i][2], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-
-	calculateMeanCorr(
-	    c,
-	    texturel,
-	    texturer,
-	    texturelr,
-	    imageW,
-	    imageH
-        );
-
-	checkCudaErrors(cudaDeviceSynchronize());
-	checkCudaErrors(cudaMemcpy(direction[i][0], c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
-    }
-}
-    checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, direction[0][0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-    checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, direction[1][0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-    checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, direction[2][0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-    checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, direction[3][0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-    checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, direction[4][0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-}
+                    checkCudaErrors(cudaDeviceSynchronize());
+                    checkCudaErrors(cudaMemcpy(direction[i][0], c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
+                }
+            }
+            checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, direction[0][0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+            checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, direction[1][0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+            checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, direction[2][0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+            checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, direction[3][0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+            checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, direction[4][0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+        }
 
 //for(int j=0; j<5; j++){
 //for(int i=0; i<imageH; i++){
 //for(int k=0; k<imageW; k++){printf("%f\t",mean[j][i*imageW+k]);} printf("\n");}printf("\n");}
 
 //if(iter==1){
-if(m==1){
-cudaMemGetInfo(&freeMem, &totalMem);
-printf("Free Memory:%luMB = %luKB,\tTotal Memory:%luMB = %luKB\n",freeMem/1024/1024,freeMem/1024,totalMem/1024/1024,totalMem/1024);
-}
-	calculatePolyDisparity(
-	    l,
-	    r,
-	    texturel,
-	    texturer,
-	    texturelr,
-	    imageW,
-	    imageH,
-	    threshold
+        if(m==1) {
+            cudaMemGetInfo(&freeMem, &totalMem);
+            printf("Free Memory:%luMB = %luKB,\tTotal Memory:%luMB = %luKB\n",freeMem/1024/1024,freeMem/1024,totalMem/1024/1024,totalMem/1024);
+        }
+        calculatePolyDisparity(
+            l,
+            r,
+            texturel,
+            texturer,
+            texturelr,
+            imageW,
+            imageH,
+            threshold
         );
 //cudaMemGetInfo(&freeMem, &totalMem);
 //printf("Free Memory:%luMB = %luKB,\tTotal Memory:%luMB = %luKB\n",freeMem/1024/1024,freeMem/1024,totalMem/1024/1024,totalMem/1024);
-	checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaDeviceSynchronize());
 
-	calculatePolyDisparity(
-	    u,
-	    c,
-	    a_Src,
-	    compare,
-	    texturelr,
-	    imageW,
-	    imageH,
-	    threshold
+        calculatePolyDisparity(
+            u,
+            c,
+            a_Src,
+            compare,
+            texturelr,
+            imageW,
+            imageH,
+            threshold
         );
 
-	checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaDeviceSynchronize());
 
-    checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, r, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+        checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, r, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+        checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
 
-	compCorrelation(
-	    c,
-	    texturel,
-	    texturer,
-	    imageW,
-	    imageH
-	);
-
-	checkCudaErrors(cudaDeviceSynchronize());
-
-
-    checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaDeviceSynchronize());
-
-
-	scaleDisparity(
-	    l,
-	    a_Src,
-	    thresholdtest,
-	    imageW,
-	    imageH
+        compCorrelation(
+            c,
+            texturel,
+            texturer,
+            imageW,
+            imageH
         );
 
-	scaleDisparity(
-	    u,
-	    compare,
-	    thresholdtest,
-	    imageW,
-	    imageH
+        checkCudaErrors(cudaDeviceSynchronize());
+
+
+        checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+        checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+        checkCudaErrors(cudaDeviceSynchronize());
+
+
+        scaleDisparity(
+            l,
+            a_Src,
+            thresholdtest,
+            imageW,
+            imageH
         );
 
-	checkCudaErrors(cudaDeviceSynchronize());
-
-
-
-    checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-	if(usingMoreGPUMemory==1){
-    checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, disp0, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, disp1, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-	checkCudaErrors(cudaDeviceSynchronize());
-	}
-	else{
-    checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, disparity[0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-    checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, disparity[1], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-	}
-	calculateTrueDisparity(
-	    l,
-	    texturel,
-	    a_Src,
-	    imageW,
-	    imageH
+        scaleDisparity(
+            u,
+            compare,
+            thresholdtest,
+            imageW,
+            imageH
         );
 
-	calculateTrueDisparity(
-	    u,
-	    texturer,
-	    compare,
-	    imageW,
-	    imageH
+        checkCudaErrors(cudaDeviceSynchronize());
+
+
+
+        checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+        checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+        if(usingMoreGPUMemory==1) {
+            checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, disp0, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, disp1, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaDeviceSynchronize());
+        }
+        else {
+            checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, disparity[0], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+            checkCudaErrors(cudaMemcpyToArray(compare, 0, 0, disparity[1], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+        }
+        calculateTrueDisparity(
+            l,
+            texturel,
+            a_Src,
+            imageW,
+            imageH
+        );
+
+        calculateTrueDisparity(
+            u,
+            texturer,
+            compare,
+            imageW,
+            imageH
         );
 
 //if((level==0)&&(iter==1)){//printf("level=%d\n",level);
-if((level==0)&&(m==1)){
+        if((level==0)&&(m==1)) {
 //	checkCudaErrors(cudaMemcpy(c, disparity[2], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-}
-else{
+        }
+        else {
 //if(~(level==MAX_LEVEL-1)){
 //if(~(level==MAX_LEVEL-1)&&(m==1)){
-   checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-	if(usingMoreGPUMemory==1){
-	if(m==1){    checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, disparity[2], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-	checkCudaErrors(cudaDeviceSynchronize());}
-	else{
-    checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, disp2, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-	checkCudaErrors(cudaDeviceSynchronize());}
-	}
-	else{
-    checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, disparity[2], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
-	}
-	calculateTrueConfidence(
-	    c,
-	    texturelr,
-	    a_Src,
-	    imageW,
-	    imageH
-	);
-}
-	checkCudaErrors(cudaDeviceSynchronize());
+            checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            if(usingMoreGPUMemory==1) {
+                if(m==1) {
+                    checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, disparity[2], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+                    checkCudaErrors(cudaDeviceSynchronize());
+                }
+                else {
+                    checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, disp2, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+                    checkCudaErrors(cudaDeviceSynchronize());
+                }
+            }
+            else {
+                checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, disparity[2], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+            }
+            calculateTrueConfidence(
+                c,
+                texturelr,
+                a_Src,
+                imageW,
+                imageH
+            );
+        }
+        checkCudaErrors(cudaDeviceSynchronize());
 
-    sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
-    
-
-if(level<(MAX_LEVEL)){
-realSmoothtime=smoothtime;
-if(level>11){realSmoothtime=10;}
-for(int j=0;j<realSmoothtime;j++){
-
-    checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-
-    checkCudaErrors(cudaDeviceSynchronize());
-        smooth(
-	    l,
-            texturel,
-            texturelr,
-            imageW,
-            imageH
-        );
-        smooth(
-	    u,
-            texturer,
-            texturelr,
-            imageW,
-            imageH
-        );
-        smooth(
-	    c,
-            texturelr,
-            texturelr,
-            imageW,
-            imageH
-        );
-    checkCudaErrors(cudaDeviceSynchronize());
-
-}}
-
-    sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[17] = gpuTime + excutionTime[17];
-    
-            if(m%2==0){
-                if((mi/2-m/2)<7){ threshold=((mi/2-m/2)-1)*((1-0.1)/(mi/2-1.0))+0.1; }
-                else{threshold=1.0;}//printf("step=%f\n",step);
-	    }
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
 
 
+        if(level<(MAX_LEVEL)) {
+            realSmoothtime=smoothtime;
+            if(level>11) {
+                realSmoothtime=10;
+            }
+            for(int j=0; j<realSmoothtime; j++) {
 
-/*
-    checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+                checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+                checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+                checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
 
-        convolutionRowsGPUTa(
-            l,
-            texturel,
-            imageW,
-            imageH
-        );
-        convolutionRowsGPUTa(
-            u,
-            texturer,
-            imageW,
-            imageH
-        );
-        convolutionRowsGPUTa(
-            c,
-            texturelr,
-            imageW,
-            imageH
-        );
+                checkCudaErrors(cudaDeviceSynchronize());
+                smooth(
+                    l,
+                    texturel,
+                    texturelr,
+                    imageW,
+                    imageH
+                );
+                smooth(
+                    u,
+                    texturer,
+                    texturelr,
+                    imageW,
+                    imageH
+                );
+                smooth(
+                    c,
+                    texturelr,
+                    texturelr,
+                    imageW,
+                    imageH
+                );
+                checkCudaErrors(cudaDeviceSynchronize());
 
-    checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            }
+        }
 
-        convolutionColumnsGPUTa(
-            l,
-            texturel,
-            imageW,
-            imageH
-        );
-        convolutionColumnsGPUTa(
-            u,
-            texturer,
-            imageW,
-            imageH
-        );
-        convolutionColumnsGPUTa(
-            c,
-            texturelr,
-            imageW,
-            imageH
-        );
-*/
-    sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
-    
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[17] = gpuTime + excutionTime[17];
+
+        if(m%2==0) {
+            if((mi/2-m/2)<7) {
+                threshold=((mi/2-m/2)-1)*((1-0.1)/(mi/2-1.0))+0.1;
+            }
+            else {
+                threshold=1.0;   //printf("step=%f\n",step);
+            }
+        }
+
+
+
+        /*
+            checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+
+                convolutionRowsGPUTa(
+                    l,
+                    texturel,
+                    imageW,
+                    imageH
+                );
+                convolutionRowsGPUTa(
+                    u,
+                    texturer,
+                    imageW,
+                    imageH
+                );
+                convolutionRowsGPUTa(
+                    c,
+                    texturelr,
+                    imageW,
+                    imageH
+                );
+
+            checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaMemcpyToArray(texturelr, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+
+                convolutionColumnsGPUTa(
+                    l,
+                    texturel,
+                    imageW,
+                    imageH
+                );
+                convolutionColumnsGPUTa(
+                    u,
+                    texturer,
+                    imageW,
+                    imageH
+                );
+                convolutionColumnsGPUTa(
+                    c,
+                    texturelr,
+                    imageW,
+                    imageH
+                );
+        */
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
+
 //	checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-        convolutionRowsGPUTa(
-            r,
-            texturel,
-            imageW,
-            imageH
-        );
-//	checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, r, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-//	checkCudaErrors(cudaDeviceSynchronize());
-        convolutionColumnsGPUTa(
-            l,
-            texturer,
-            imageW,
-            imageH
-        );
-//	checkCudaErrors(cudaDeviceSynchronize());
-
-    checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+        checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
         convolutionRowsGPUTa(
             r,
             texturel,
@@ -2384,7 +2366,25 @@ for(int j=0;j<realSmoothtime;j++){
             imageH
         );
 //	checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, r, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+        checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, r, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+//	checkCudaErrors(cudaDeviceSynchronize());
+        convolutionColumnsGPUTa(
+            l,
+            texturer,
+            imageW,
+            imageH
+        );
+//	checkCudaErrors(cudaDeviceSynchronize());
+
+        checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+        convolutionRowsGPUTa(
+            r,
+            texturel,
+            imageW,
+            imageH
+        );
+//	checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, r, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
 //	checkCudaErrors(cudaDeviceSynchronize());
         convolutionColumnsGPUTa(
             u,
@@ -2394,7 +2394,7 @@ for(int j=0;j<realSmoothtime;j++){
         );
 //	checkCudaErrors(cudaDeviceSynchronize());
 
-    checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+        checkCudaErrors(cudaMemcpyToArray(texturel, 0, 0, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
         convolutionRowsGPUTa(
             r,
             texturel,
@@ -2402,7 +2402,7 @@ for(int j=0;j<realSmoothtime;j++){
             imageH
         );
 //	checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, r, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+        checkCudaErrors(cudaMemcpyToArray(texturer, 0, 0, r, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
 //	checkCudaErrors(cudaDeviceSynchronize());
         convolutionColumnsGPUTa(
             c,
@@ -2412,38 +2412,38 @@ for(int j=0;j<realSmoothtime;j++){
         );
 //	checkCudaErrors(cudaDeviceSynchronize());
 
-    
-    sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[18] = gpuTime + excutionTime[18];
-    
-	if(usingMoreGPUMemory==1){
-	checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaMemcpy(disp0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpy(disp1, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemcpy(disp2, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-	checkCudaErrors(cudaDeviceSynchronize());
-	}
-	else{
-    checkCudaErrors(cudaMemcpy(disparity[0], l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaMemcpy(disparity[1], u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaMemcpy(disparity[2], c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
+
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[18] = gpuTime + excutionTime[18];
+
+        if(usingMoreGPUMemory==1) {
+            checkCudaErrors(cudaDeviceSynchronize());
+            checkCudaErrors(cudaMemcpy(disp0, l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaMemcpy(disp1, u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaMemcpy(disp2, c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaDeviceSynchronize());
+        }
+        else {
+            checkCudaErrors(cudaMemcpy(disparity[0], l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
+            checkCudaErrors(cudaMemcpy(disparity[1], u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
+            checkCudaErrors(cudaMemcpy(disparity[2], c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
 //    disparity=convolutionGPUTa(disparity, 3, imageW, imageH);
-	}
+        }
 
-}
+    }
 
-if(usingMoreGPUMemory==1){
-    checkCudaErrors(cudaMemcpy(disparity[0], l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaMemcpy(disparity[1], u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaMemcpy(disparity[2], c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
-}
+    if(usingMoreGPUMemory==1) {
+        checkCudaErrors(cudaMemcpy(disparity[0], l, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
+        checkCudaErrors(cudaMemcpy(disparity[1], u, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
+        checkCudaErrors(cudaMemcpy(disparity[2], c, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
+    }
 
-/*
-for(int j=0; j<channels; j++){
-for(int i=0; i<imageH; i++){
-for(int k=0; k<imageW; k++){printf("%f\t",outim[j][i*imageW+k]);} printf("\n");}printf("\n");}
-*/
+    /*
+    for(int j=0; j<channels; j++){
+    for(int i=0; i<imageH; i++){
+    for(int k=0; k<imageW; k++){printf("%f\t",outim[j][i*imageW+k]);} printf("\n");}printf("\n");}
+    */
 
 
     cudaFreeArray(a_Src);
@@ -2456,34 +2456,34 @@ for(int k=0; k<imageW; k++){printf("%f\t",outim[j][i*imageW+k]);} printf("\n");}
     cudaFree(u);
     cudaFree(d);
     cudaFree(c);
-if(usingMoreGPUMemory==1){
-    cudaFree(directionl);
-    cudaFree(directionr);
-    cudaFree(directionu);
-    cudaFree(directiond);
-    cudaFree(directionc);
-    cudaFreeArray(temp2);
-    cudaFree(disp0);
-    cudaFree(disp1);
-    cudaFree(disp2);
-    cudaFree(imleft2);
-    cudaFree(imright2);
-    cudaFreeArray(imleft);
-    cudaFreeArray(imright);
-}
-else{
-for(int i=0;i<5;i++){
-    for (int j=0; j<channels; j++) {
-//	free(direction[i][j]);
-	cudaFreeHost(direction[i][j]);
+    if(usingMoreGPUMemory==1) {
+        cudaFree(directionl);
+        cudaFree(directionr);
+        cudaFree(directionu);
+        cudaFree(directiond);
+        cudaFree(directionc);
+        cudaFreeArray(temp2);
+        cudaFree(disp0);
+        cudaFree(disp1);
+        cudaFree(disp2);
+        cudaFree(imleft2);
+        cudaFree(imright2);
+        cudaFreeArray(imleft);
+        cudaFreeArray(imright);
     }
-    free(direction[i]);
-}
-free(direction);
-}
+    else {
+        for(int i=0; i<5; i++) {
+            for (int j=0; j<channels; j++) {
+//	free(direction[i][j]);
+                cudaFreeHost(direction[i][j]);
+            }
+            free(direction[i]);
+        }
+        free(direction);
+    }
 
 
-sdkDeleteTimer(&hTimer); // valgrind
+    sdkDeleteTimer(&hTimer); // valgrind
     return disparity;
 
 }
@@ -2508,13 +2508,13 @@ float ** MatchGPULib::convolutionGPUTa(float** im, int channels, int imageW, int
 
     StopWatchInterface *hTimer = NULL;
     sdkCreateTimer(&hTimer);
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
-/*    outim = (float**)malloc(channels * sizeof(float*));
-    for(int i=0; i<channels; i++){
-	outim[i] = (float*)malloc(imageW * imageH * sizeof(float));
-    } 
-*/
+    sdkResetTimer(&hTimer);
+    sdkStartTimer(&hTimer);
+    /*    outim = (float**)malloc(channels * sizeof(float*));
+        for(int i=0; i<channels; i++){
+    	outim[i] = (float*)malloc(imageW * imageH * sizeof(float));
+        }
+    */
     tempW=iDivUp(imageW, COLUMNS_BLOCKDIM_X)*COLUMNS_BLOCKDIM_X;
     tempH=iDivUp(imageH, (COLUMNS_RESULT_STEPS * COLUMNS_BLOCKDIM_Y))*(COLUMNS_RESULT_STEPS * COLUMNS_BLOCKDIM_Y);
 
@@ -2525,22 +2525,22 @@ float ** MatchGPULib::convolutionGPUTa(float** im, int channels, int imageW, int
     checkCudaErrors(cudaMallocArray(&a_Src, &floatTex, imageW, imageH));
 
 
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+    sdkStopTimer(&hTimer);
+    gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
 
-    for(int j=0;j<channels;j++) 
+    for(int j=0; j<channels; j++)
     {
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
-    checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, im[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
+        checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, im[j], imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
 
-	checkCudaErrors(cudaDeviceSynchronize());
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[8] = gpuTime + excutionTime[8];
+        checkCudaErrors(cudaDeviceSynchronize());
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[8] = gpuTime + excutionTime[8];
 
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
 
         convolutionRowsGPUTa(
             d_Output,
@@ -2548,9 +2548,9 @@ float ** MatchGPULib::convolutionGPUTa(float** im, int channels, int imageW, int
             imageW,
             imageH
         );
-    checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, d_Output, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, d_Output, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+        checkCudaErrors(cudaDeviceSynchronize());
 
         convolutionColumnsGPUTa(
             d_Output,
@@ -2559,29 +2559,29 @@ float ** MatchGPULib::convolutionGPUTa(float** im, int channels, int imageW, int
             imageH
         );
 
-	checkCudaErrors(cudaDeviceSynchronize());
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[7] = gpuTime + excutionTime[7];
+        checkCudaErrors(cudaDeviceSynchronize());
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[7] = gpuTime + excutionTime[7];
 
-	sdkResetTimer(&hTimer);
-	sdkStartTimer(&hTimer);
-	checkCudaErrors(cudaMemcpy(im[j], d_Output, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
-	sdkStopTimer(&hTimer);
-	gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
-	excutionTime[8] = gpuTime + excutionTime[8];
+        sdkResetTimer(&hTimer);
+        sdkStartTimer(&hTimer);
+        checkCudaErrors(cudaMemcpy(im[j], d_Output, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
+        sdkStopTimer(&hTimer);
+        gpuTime = 0.001 * sdkGetTimerValue(&hTimer);
+        excutionTime[8] = gpuTime + excutionTime[8];
     }
 
-	sdkResetTimer(&hTimer);
+    sdkResetTimer(&hTimer);
 
     checkCudaErrors(cudaFree(d_Buffer));
     checkCudaErrors(cudaFree(d_Output));
     checkCudaErrors(cudaFree(d_Input));
     cudaFreeArray(a_Src);
 
-sdkDeleteTimer(&hTimer); // valgrind
+    sdkDeleteTimer(&hTimer); // valgrind
     return im;
-	
+
 }
 
 
@@ -2609,19 +2609,19 @@ float ** MatchGPULib::hierarchicalDisparity(float** im, float*** foveated, int c
     height[0] = heightInit;
     for(int i=0; i<=foveatelevel; i++)
     {
-	width[i+1]=width[i]/SCALE;
-	height[i+1]=height[i]/SCALE;
+        width[i+1]=width[i]/SCALE;
+        height[i+1]=height[i]/SCALE;
     }
 
     disparity = (float**)malloc(channels * sizeof(float*));
-    for(int i=0; i<channels; i++){
+    for(int i=0; i<channels; i++) {
         disparity[i] = (float*)malloc(heightInit * widthInit * sizeof(float));
     }
     pAlias2 = (float***)malloc(foveatelevel * sizeof(float**));
     for(int i=0; i<foveatelevel; i++)
     {
         pAlias2[i] = (float**)malloc(channels * sizeof(float*));
-        for(int k=0;k<channels;k++){
+        for(int k=0; k<channels; k++) {
             pAlias2[i][k] = (float*)malloc(width[i] * height[i] * sizeof(float));
         }
     }
@@ -2632,7 +2632,7 @@ float ** MatchGPULib::hierarchicalDisparity(float** im, float*** foveated, int c
     foveatedcols=height[foveatelevel-1];
     foveatedrows=width[foveatelevel-1];
 
-    for(level=foveatelevel-1;level>0;level--)
+    for(level=foveatelevel-1; level>0; level--)
     {
 
         levelscale = SCALE;
@@ -2646,7 +2646,9 @@ float ** MatchGPULib::hierarchicalDisparity(float** im, float*** foveated, int c
         l1=x-xs;
         u=y-ys;
 
-        if(level==foveatelevel-1){pAlias1 = foveated[foveatelevel-1];}
+        if(level==foveatelevel-1) {
+            pAlias1 = foveated[foveatelevel-1];
+        }
 
 
         imageW=rows1;//foveatedrows;
@@ -2656,17 +2658,17 @@ float ** MatchGPULib::hierarchicalDisparity(float** im, float*** foveated, int c
 
         checkCudaErrors(cudaMalloc((void **)&d_Output,  imageW2 * imageH2 * sizeof(float)));
         checkCudaErrors(cudaMallocArray(&a_Src, &floatTex, imageW, imageH));
-        for(int j=0; j<channels; j++){
-            checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, 
-                pAlias1[j], imageW * imageH * sizeof(float), 
-                cudaMemcpyHostToDevice));
+        for(int j=0; j<channels; j++) {
+            checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0,
+                                              pAlias1[j], imageW * imageH * sizeof(float),
+                                              cudaMemcpyHostToDevice));
             checkCudaErrors(cudaDeviceSynchronize());
             partsubsampleDispGPU(d_Output, a_Src, imageW, imageH,
-	            levelscale, imageW2, imageH2);
+                                 levelscale, imageW2, imageH2);
             checkCudaErrors(cudaDeviceSynchronize());
-            checkCudaErrors(cudaMemcpy(pAlias2[level-1][j], 
-                d_Output, imageW2 * imageH2 * sizeof(float), 
-                cudaMemcpyDeviceToHost));
+            checkCudaErrors(cudaMemcpy(pAlias2[level-1][j],
+                                       d_Output, imageW2 * imageH2 * sizeof(float),
+                                       cudaMemcpyDeviceToHost));
         }
         cudaFreeArray(a_Src);
         cudaFree(d_Output);
@@ -2674,26 +2676,26 @@ float ** MatchGPULib::hierarchicalDisparity(float** im, float*** foveated, int c
         pAlias1 = pAlias2[level-1];
 
         for(int j=0; j<channels; j++)
-            for(int i=0;i<foveatedcols;i++){
+            for(int i=0; i<foveatedcols; i++) {
                 memcpy(&pAlias1[j][(u+i)*width[level-1]+l1],
-                     &foveated[level-1][j][i*foveatedrows],
-                      foveatedrows * sizeof(float));
+                       &foveated[level-1][j][i*foveatedrows],
+                       foveatedrows * sizeof(float));
             }
 
     }   //END of for(level=foveatelevel-1;level>0;level--)
-    
+
     disparity = pAlias2[0];
 
-/* valgrind
-for(int i=0; i<foveatelevel; i++){
- for(int k=0;k<channels;k++){
-        free(pAlias2[i][k]);
-}
-free(pAlias2[i]);
+    /* valgrind
+    for(int i=0; i<foveatelevel; i++){
+     for(int k=0;k<channels;k++){
+            free(pAlias2[i][k]);
     }
-free(pAlias2);
-*/
-cvReleaseImage(&outImg); // valgrind
+    free(pAlias2[i]);
+        }
+    free(pAlias2);
+    */
+    cvReleaseImage(&outImg); // valgrind
     return disparity;
 
 }

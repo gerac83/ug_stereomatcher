@@ -43,7 +43,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-find_package(OpenCV 2)
+find_package(OpenCV)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 ### testing non fovea (working)
@@ -74,20 +74,18 @@ find_package(CUDA REQUIRED)
 # Different gpus use different gencode flags. Uncomment accordingly
 # ######################### WARNING #########################
 
-# Flags below work pretty much for older GPUS (700 and 800 series)
-SET(CMAKE_C_FLAGS "-lopencv_core -lopencv_highgui -lm -m64")
-SET(CUDA_NVCC_FLAGS "-gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_50,code=compute_50")
-
 # Setiings below are for Geforce GTX 970 and most likely for 900 series
-SET(CUDA_NVCC_FLAGS "-gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_50,code=compute_50")
+# Compatible with CUDA 8.0
+SET(CUDA_NVCC_FLAGS " -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_50,code=compute_50")
 
 # ###########################################################
 # ###########################################################
+set_directory_properties( PROPERTIES COMPILE_DEFINITIONS "" )
 
 ADD_DEFINITIONS(-DCUDA_BUILD)
 SET(CMAKE_CXX_FLAGS "-O3")
 
-include_directories(/usr/local/cuda/samples/common/inc)# /usr/local/cuda-5.5/lib64)  
+include_directories(/usr/local/cuda/samples/common/inc)
 
 CUDA_ADD_LIBRARY(MatchLib src/gpu_matcher/MatchLib.cu)
 add_library(MatchGPULib src/gpu_matcher/MatchGPULib.cpp)
@@ -102,7 +100,6 @@ target_link_libraries(MatchLib ${OpenCV_LIBRARIES})
 
 
 add_executable(UG_matcher_gpu src/gpu_matcher/UG_GPU_matcher.cpp)
-#target_link_libraries(UG_matcher_gpu shrutil_x86_64 cutil_x86_64)
 add_dependencies(UG_matcher_gpu ug_stereomatcher_generate_messages_cpp)
 target_link_libraries(UG_matcher_gpu MatchGPULib ${catkin_LIBRARIES})
 
